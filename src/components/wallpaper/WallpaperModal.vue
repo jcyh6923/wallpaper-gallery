@@ -206,7 +206,7 @@ onUnmounted(() => {
                   <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
                   <path d="M8 21h8M12 17v4" />
                 </svg>
-                <span>{{ resolution.width }} × {{ resolution.height }} px</span>
+                <span>{{ resolution.width }} × {{ resolution.height }}</span>
               </div>
               <!-- 文件大小 -->
               <div class="detail-item">
