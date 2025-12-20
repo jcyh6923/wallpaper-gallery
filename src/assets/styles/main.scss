@@ -5,6 +5,94 @@
 @use 'variables' as *;
 @use 'animations';
 
+// ========================================
+// Element Plus 主题定制
+// ========================================
+:root {
+  // Element Plus 主色调
+  --el-color-primary: #{$color-accent-light};
+  --el-color-primary-light-3: rgba(99, 102, 241, 0.7);
+  --el-color-primary-light-5: rgba(99, 102, 241, 0.5);
+  --el-color-primary-light-7: rgba(99, 102, 241, 0.3);
+  --el-color-primary-light-8: rgba(99, 102, 241, 0.2);
+  --el-color-primary-light-9: rgba(99, 102, 241, 0.1);
+  --el-color-primary-dark-2: #4f46e5;
+
+  // Element Plus 背景和边框
+  --el-bg-color: #{$color-bg-secondary-light};
+  --el-bg-color-overlay: #{$color-bg-card-light};
+  --el-fill-color-blank: #{$color-bg-secondary-light};
+  --el-fill-color-light: #{$color-bg-hover-light};
+  --el-border-color: #{$color-border-light};
+  --el-border-color-light: #{$color-border-light};
+  --el-border-color-lighter: #{$color-border-light};
+
+  // Element Plus 文字颜色
+  --el-text-color-primary: #{$color-text-primary-light};
+  --el-text-color-regular: #{$color-text-secondary-light};
+  --el-text-color-secondary: #{$color-text-muted-light};
+  --el-text-color-placeholder: #{$color-text-muted-light};
+
+  // Element Plus 其他
+  --el-border-radius-base: #{$radius-md};
+  --el-border-radius-small: #{$radius-sm};
+  --el-font-family: #{$font-family};
+}
+
+// 深色主题 Element Plus 覆盖
+[data-theme='dark'] {
+  --el-color-primary: #{$color-accent-dark};
+  --el-color-primary-light-3: rgba(129, 140, 248, 0.7);
+  --el-color-primary-light-5: rgba(129, 140, 248, 0.5);
+  --el-color-primary-light-7: rgba(129, 140, 248, 0.3);
+  --el-color-primary-light-8: rgba(129, 140, 248, 0.2);
+  --el-color-primary-light-9: rgba(129, 140, 248, 0.1);
+  --el-color-primary-dark-2: #a5b4fc;
+
+  --el-bg-color: #{$color-bg-secondary-dark};
+  --el-bg-color-overlay: #{$color-bg-card-dark};
+  --el-fill-color-blank: #{$color-bg-secondary-dark};
+  --el-fill-color-light: #{$color-bg-hover-dark};
+  --el-border-color: #{$color-border-dark};
+  --el-border-color-light: #{$color-border-dark};
+  --el-border-color-lighter: #{$color-border-dark};
+
+  --el-text-color-primary: #{$color-text-primary-dark};
+  --el-text-color-regular: #{$color-text-secondary-dark};
+  --el-text-color-secondary: #{$color-text-muted-dark};
+  --el-text-color-placeholder: #{$color-text-muted-dark};
+
+  // 深色模式下拉框样式
+  .el-select-dropdown {
+    background-color: #{$color-bg-card-dark};
+    border-color: #{$color-border-dark};
+  }
+
+  .el-select-dropdown__item {
+    color: #{$color-text-primary-dark};
+
+    &:hover,
+    &.hover {
+      background-color: #{$color-bg-hover-dark};
+    }
+
+    &.selected {
+      color: #{$color-accent-dark};
+      background-color: rgba(129, 140, 248, 0.15);
+    }
+  }
+
+  .el-input__wrapper {
+    background-color: #{$color-bg-secondary-dark};
+    box-shadow: 0 0 0 1px #{$color-border-dark} inset;
+  }
+
+  .el-popper.is-light {
+    background: #{$color-bg-card-dark};
+    border-color: #{$color-border-dark};
+  }
+}
+
 // Reset & Base
 *,
 *::before,

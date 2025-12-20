@@ -1,5 +1,8 @@
 import { fileURLToPath, URL } from 'node:url'
 import vue from '@vitejs/plugin-vue'
+import AutoImport from 'unplugin-auto-import/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 import compression from 'vite-plugin-compression'
 
@@ -7,6 +10,13 @@ import compression from 'vite-plugin-compression'
 export default defineConfig({
   plugins: [
     vue(),
+    // Element Plus 自动按需导入
+    AutoImport({
+      resolvers: [ElementPlusResolver()],
+    }),
+    Components({
+      resolvers: [ElementPlusResolver()],
+    }),
     // Gzip 压缩
     compression({
       algorithm: 'gzip',
@@ -36,7 +46,8 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vue: ['vue'],
+          'vue': ['vue'],
+          'element-plus': ['element-plus'],
         },
         // 优化文件名
         chunkFileNames: 'assets/js/[name]-[hash].js',

@@ -24,5 +24,7 @@ export default antfu({
     '.spec-workflow/**',
     '.github/**',
     '.husky/**',
+    'auto-imports.d.ts',
+    'components.d.ts',
   ],
 })

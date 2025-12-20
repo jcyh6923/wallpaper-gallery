@@ -22,12 +22,12 @@ defineProps({
 
 const emit = defineEmits(['update:sortBy', 'update:formatFilter'])
 
-function handleSortChange(e) {
-  emit('update:sortBy', e.target.value)
+function handleSortChange(value) {
+  emit('update:sortBy', value)
 }
 
-function handleFormatChange(e) {
-  emit('update:formatFilter', e.target.value)
+function handleFormatChange(value) {
+  emit('update:formatFilter', value)
 }
 </script>
 
@@ -45,40 +45,40 @@ function handleFormatChange(e) {
     <div class="filter-right">
       <!-- Format Filter -->
       <div class="filter-item">
-        <label class="filter-label" for="format-filter">格式</label>
-        <select
-          id="format-filter"
-          class="filter-select"
-          :value="formatFilter"
+        <span class="filter-label">格式</span>
+        <el-select
+          :model-value="formatFilter"
+          placeholder="全部格式"
+          size="default"
+          style="width: 120px"
           @change="handleFormatChange"
         >
-          <option
+          <el-option
             v-for="option in FORMAT_OPTIONS"
             :key="option.value"
+            :label="option.label"
             :value="option.value"
-          >
-            {{ option.label }}
-          </option>
-        </select>
+          />
+        </el-select>
       </div>
 
       <!-- Sort -->
       <div class="filter-item">
-        <label class="filter-label" for="sort-select">排序</label>
-        <select
-          id="sort-select"
-          class="filter-select"
-          :value="sortBy"
+        <span class="filter-label">排序</span>
+        <el-select
+          :model-value="sortBy"
+          placeholder="排序方式"
+          size="default"
+          style="width: 130px"
           @change="handleSortChange"
         >
-          <option
+          <el-option
             v-for="option in SORT_OPTIONS"
             :key="option.value"
+            :label="option.label"
             :value="option.value"
-          >
-            {{ option.label }}
-          </option>
-        </select>
+          />
+        </el-select>
       </div>
     </div>
   </div>
@@ -117,7 +117,7 @@ function handleFormatChange(e) {
 .filter-right {
   display: flex;
   align-items: center;
-  gap: $spacing-md;
+  gap: $spacing-lg;
 }
 
 .filter-item {
@@ -133,31 +133,6 @@ function handleFormatChange(e) {
 
   @include mobile-only {
     display: none;
-  }
-}
-
-.filter-select {
-  padding: $spacing-xs $spacing-lg $spacing-xs $spacing-sm;
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: $radius-md;
-  color: var(--color-text-primary);
-  font-size: $font-size-sm;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-
-  &:hover {
-    border-color: var(--color-text-muted);
-  }
-
-  &:focus {
-    outline: none;
-    border-color: var(--color-accent);
-    box-shadow: 0 0 0 3px var(--color-accent-light);
   }
 }
 </style>
