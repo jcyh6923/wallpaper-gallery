@@ -1,6 +1,6 @@
 <script setup>
 import { gsap } from 'gsap'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { IMAGE_PROXY } from '@/utils/constants'
 import { formatFileSize } from '@/utils/format'
 
@@ -22,6 +22,8 @@ const imageLoaded = ref(false)
 const imageError = ref(false)
 const retryCount = ref(0)
 const maxRetries = 1
+const loadTimeout = ref(null)
+const LOAD_TIMEOUT_MS = 8000 // 8秒超时
 
 // 直接使用 JSON 中的 thumbnailUrl，如果加载失败则使用代理服务
 const thumbnailUrl = computed(() => {
@@ -30,6 +32,24 @@ const thumbnailUrl = computed(() => {
   }
   return props.wallpaper.thumbnailUrl || props.wallpaper.url
 })
+
+// 启动加载超时计时器
+function startLoadTimeout() {
+  clearLoadTimeout()
+  loadTimeout.value = setTimeout(() => {
+    // 超时未加载成功，触发重试
+    if (!imageLoaded.value && retryCount.value < maxRetries) {
+      retryCount.value++
+    }
+  }, LOAD_TIMEOUT_MS)
+}
+
+function clearLoadTimeout() {
+  if (loadTimeout.value) {
+    clearTimeout(loadTimeout.value)
+    loadTimeout.value = null
+  }
+}
 
 const formattedSize = computed(() => formatFileSize(props.wallpaper.size))
 const fileFormat = computed(() => {
@@ -57,14 +77,29 @@ onMounted(() => {
       },
     )
   }
+  // 启动加载超时计时器
+  startLoadTimeout()
+})
+
+onUnmounted(() => {
+  clearLoadTimeout()
+})
+
+// 当 retryCount 变化时重启超时计时器
+watch(retryCount, () => {
+  if (retryCount.value > 0 && retryCount.value <= maxRetries) {
+    startLoadTimeout()
+  }
 })
 
 function handleImageLoad() {
+  clearLoadTimeout()
   imageLoaded.value = true
   imageError.value = false
 }
 
 function handleImageError() {
+  clearLoadTimeout()
   if (retryCount.value < maxRetries) {
     retryCount.value++
     imageLoaded.value = false

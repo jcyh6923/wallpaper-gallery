@@ -277,59 +277,80 @@ onUnmounted(() => {
 
         <!-- Info Panel -->
         <div ref="infoRef" class="modal-info">
-          <div class="info-header">
-            <h3 class="info-title">
-              {{ wallpaper.filename }}
-            </h3>
-            <div class="info-tags">
-              <span class="tag" :class="[`tag--${qualityType}`]">
-                {{ quality }}
-              </span>
-              <span class="tag" :class="[`tag--${resolution.type || 'dark'}`]">{{ resolution.label }}</span>
-              <span class="tag tag--secondary">{{ fileExt }}</span>
+          <!-- 图片加载中显示骨架屏 -->
+          <template v-if="!imageLoaded || imageError">
+            <div class="info-skeleton">
+              <div class="skeleton-title" />
+              <div class="skeleton-tags">
+                <div class="skeleton-tag" />
+                <div class="skeleton-tag" />
+                <div class="skeleton-tag" />
+              </div>
+              <div class="skeleton-details">
+                <div class="skeleton-line" />
+                <div class="skeleton-line" />
+                <div class="skeleton-line" />
+              </div>
+              <div class="skeleton-btn" />
             </div>
-          </div>
+          </template>
 
-          <div class="info-details">
-            <!-- 分辨率尺寸 -->
-            <div v-if="resolution.width" class="detail-item detail-item--highlight">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-                <path d="M8 21h8M12 17v4" />
-              </svg>
-              <span>{{ resolution.width }} × {{ resolution.height }}</span>
+          <!-- 图片加载完成后显示真实信息 -->
+          <template v-else>
+            <div class="info-header">
+              <h3 class="info-title">
+                {{ wallpaper.filename }}
+              </h3>
+              <div class="info-tags">
+                <span class="tag" :class="[`tag--${qualityType}`]">
+                  {{ quality }}
+                </span>
+                <span class="tag" :class="[`tag--${resolution.type || 'dark'}`]">{{ resolution.label }}</span>
+                <span class="tag tag--secondary">{{ fileExt }}</span>
+              </div>
             </div>
-            <!-- 文件大小 -->
-            <div class="detail-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+            <div class="info-details">
+              <!-- 分辨率尺寸 -->
+              <div v-if="actualDimensions.width > 0" class="detail-item detail-item--highlight">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                  <path d="M8 21h8M12 17v4" />
+                </svg>
+                <span>{{ actualDimensions.width }} × {{ actualDimensions.height }}</span>
+              </div>
+              <!-- 文件大小 -->
+              <div class="detail-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                </svg>
+                <span>{{ formattedSize }}</span>
+              </div>
+              <!-- 上传日期 -->
+              <div class="detail-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                <span>{{ formattedDate }}</span>
+                <span class="detail-sub">({{ relativeTime }})</span>
+              </div>
+            </div>
+
+            <button
+              class="download-btn"
+              :disabled="downloading"
+              @click="handleDownload"
+            >
+              <LoadingSpinner v-if="downloading" size="sm" />
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
               </svg>
-              <span>{{ formattedSize }}</span>
-            </div>
-            <!-- 上传日期 -->
-            <div class="detail-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-              <span>{{ formattedDate }}</span>
-              <span class="detail-sub">({{ relativeTime }})</span>
-            </div>
-          </div>
-
-          <button
-            class="download-btn"
-            :disabled="downloading"
-            @click="handleDownload"
-          >
-            <LoadingSpinner v-if="downloading" size="sm" />
-            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
-            </svg>
-            <span>{{ downloading ? '下载中...' : '下载原图' }}</span>
-          </button>
+              <span>{{ downloading ? '下载中...' : '下载原图' }}</span>
+            </button>
+          </template>
         </div>
       </div>
     </div>
@@ -655,6 +676,93 @@ onUnmounted(() => {
   svg {
     width: 18px;
     height: 18px;
+  }
+}
+
+// 骨架屏样式
+.info-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.skeleton-title {
+  height: 24px;
+  width: 80%;
+  background: var(--color-bg-hover);
+  border-radius: var(--radius-sm);
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-tags {
+  display: flex;
+  gap: $spacing-xs;
+}
+
+.skeleton-tag {
+  height: 24px;
+  width: 50px;
+  background: var(--color-bg-hover);
+  border-radius: $radius-sm;
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+
+  &:nth-child(2) {
+    width: 40px;
+    animation-delay: 0.1s;
+  }
+
+  &:nth-child(3) {
+    width: 35px;
+    animation-delay: 0.2s;
+  }
+}
+
+.skeleton-details {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  background: var(--color-bg-hover);
+  border-radius: var(--radius-md);
+}
+
+.skeleton-line {
+  height: 18px;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-sm);
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+
+  &:nth-child(1) {
+    width: 70%;
+  }
+
+  &:nth-child(2) {
+    width: 50%;
+    animation-delay: 0.1s;
+  }
+
+  &:nth-child(3) {
+    width: 60%;
+    animation-delay: 0.2s;
+  }
+}
+
+.skeleton-btn {
+  height: 48px;
+  width: 100%;
+  background: var(--color-bg-hover);
+  border-radius: var(--radius-md);
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+  margin-top: auto;
+}
+
+@keyframes skeletonPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }
 </style>
