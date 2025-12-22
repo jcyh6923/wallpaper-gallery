@@ -69,21 +69,6 @@ npm run build
 # 预览构建结果
 npm run preview
 ```
-
-## 部署
-
-项目配置了 GitHub Actions 自动部署：
-
-1. 推送代码到 `main` 分支
-2. GitHub Actions 自动构建并部署到 GitHub Pages
-3. 访问 `https://<username>.github.io/wallpaper-gallery/`
-
-### 首次部署配置
-
-1. 进入仓库 **Settings** → **Pages**
-2. **Source** 选择 **GitHub Actions**
-3. 推送代码触发部署
-
 ## 项目结构
 
 ```text
@@ -127,10 +112,6 @@ wallpaper-gallery/
 - PC 端显示：电脑壁纸 + 头像
 - 移动端显示：手机壁纸 + 头像
 
-## 数据源
-
-壁纸数据来自 [IT-NuanxinPro/nuanXinProPic](https://github.com/IT-NuanxinPro/nuanXinProPic) 图床仓库。
-
 ### 目录结构
 
 ```text
@@ -154,8 +135,6 @@ nuanXinProPic/
 | 详情预览 | `wallpaper/` 目录 | 原图，支持下载 |
 
 **降级策略**：缩略图加载失败时自动切换到 [wsrv.nl](https://wsrv.nl) 代理服务生成缩略图，确保图片始终可用。
-
-缩略图由图床仓库的 GitHub Actions 自动生成，无需依赖第三方图片代理服务。
 
 ## License
 

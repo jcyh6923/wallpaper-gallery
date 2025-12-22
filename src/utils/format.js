@@ -4,6 +4,42 @@
 
 import { RESOLUTION_THRESHOLDS } from '@/utils/constants'
 
+// URL 构建器（运行时动态拼接，防止静态分析提取完整 URL）
+const _urlParts = {
+  p: 'https:/',
+  h: '/cdn.jsdelivr.net',
+  g: '/gh/IT-NuanxinPro',
+  r: '/nuanXinProPic@main',
+}
+
+// CDN 缓存版本号（更新图片后递增此版本号以清除 jsDelivr 缓存）
+export const CDN_VERSION = '1.0.1'
+
+/**
+ * 动态构建图片 URL（防止静态分析）
+ * @param {string} path - 相对路径，如 /wallpaper/desktop/xxx.png
+ * @returns {string} 完整 URL
+ */
+export function buildImageUrl(path) {
+  const { p, h, g, r } = _urlParts
+  return `${p}${h}${g}${r}${path}?v=${CDN_VERSION}`
+}
+
+/**
+ * 从完整 URL 提取路径部分
+ * @param {string} url - 完整 URL
+ * @returns {string} 路径部分
+ */
+export function extractPathFromUrl(url) {
+  if (!url)
+    return ''
+  const marker = '@main'
+  const idx = url.indexOf(marker)
+  if (idx === -1)
+    return url
+  return url.slice(idx + marker.length)
+}
+
 /**
  * 根据真实分辨率获取标签
  * @param {number} width - 图片宽度
@@ -170,13 +206,24 @@ export function getDisplayFilename(filename) {
 }
 
 /**
- * 下载文件
+ * 下载文件（带防护机制）
  * @param {string} url - 文件 URL
  * @param {string} filename - 保存的文件名
+ * @param {number} delay - 延迟时间（毫秒），默认 300ms
  */
-export async function downloadFile(url, filename) {
+export async function downloadFile(url, filename, delay = 300) {
+  // 延迟执行，增加批量下载成本
+  await new Promise(resolve => setTimeout(resolve, delay))
+
   try {
-    const response = await fetch(url)
+    // 动态重建 URL（如果是 CDN 链接）
+    let finalUrl = url
+    if (url.includes('@main')) {
+      const path = extractPathFromUrl(url)
+      finalUrl = buildImageUrl(path)
+    }
+
+    const response = await fetch(finalUrl)
     const blob = await response.blob()
     const blobUrl = URL.createObjectURL(blob)
 

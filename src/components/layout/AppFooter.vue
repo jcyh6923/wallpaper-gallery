@@ -46,16 +46,6 @@ const { statistics } = useWallpapers()
           <span class="footer-divider">|</span>
           Made with ❤️
         </p>
-        <p class="footer-source">
-          图片来源：
-          <a
-            href="https://github.com/IT-NuanxinPro/nuanXinProPic"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            GitHub 图床
-          </a>
-        </p>
       </div>
     </div>
   </footer>

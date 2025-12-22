@@ -4,6 +4,7 @@
 
 import { computed, ref } from 'vue'
 import { SERIES_CONFIG } from '@/utils/constants'
+import { buildImageUrl } from '@/utils/format'
 
 // 每个系列的数据缓存
 const seriesCache = ref({})
@@ -24,6 +25,22 @@ function formatBytes(bytes) {
   const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return `${Number.parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`
+}
+
+/**
+ * 将相对路径转换为完整 URL
+ * @param {object} wallpaper - 壁纸数据（包含相对路径）
+ * @returns {object} 包含完整 URL 的壁纸数据
+ */
+function transformWallpaperUrls(wallpaper) {
+  return {
+    ...wallpaper,
+    // 动态拼接完整 URL
+    url: wallpaper.path ? buildImageUrl(wallpaper.path) : '',
+    thumbnailUrl: wallpaper.thumbnailPath ? buildImageUrl(wallpaper.thumbnailPath) : '',
+    previewUrl: wallpaper.previewPath ? buildImageUrl(wallpaper.previewPath) : null,
+    downloadUrl: wallpaper.path ? buildImageUrl(wallpaper.path) : '',
+  }
 }
 
 export function useWallpapers() {
@@ -51,6 +68,7 @@ export function useWallpapers() {
     error.value = null
 
     try {
+      // 加载 JSON 数据
       const response = await fetch(seriesConfig.dataUrl)
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -58,11 +76,21 @@ export function useWallpapers() {
       const data = await response.json()
       const wallpaperList = data.wallpapers || data
 
+      // 处理壁纸数据（JSON 中已包含完整 URL，或需要转换相对路径）
+      const transformedList = wallpaperList.map((wallpaper) => {
+        // 如果 JSON 中已经有完整 URL，直接使用
+        if (wallpaper.url && wallpaper.thumbnailUrl) {
+          return wallpaper
+        }
+        // 否则从相对路径转换
+        return transformWallpaperUrls(wallpaper)
+      })
+
       // 存入缓存
-      seriesCache.value[seriesId] = wallpaperList
+      seriesCache.value[seriesId] = transformedList
 
       // 更新当前数据
-      wallpapers.value = wallpaperList
+      wallpapers.value = transformedList
       currentLoadedSeries.value = seriesId
     }
     catch (e) {

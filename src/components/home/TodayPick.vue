@@ -29,11 +29,11 @@ const todayWallpaper = computed(() => {
   return props.wallpapers[index]
 })
 
-// 今日精选直接使用原图
+// 今日精选使用预览图（原图仅通过下载获取）
 const imageUrl = computed(() => {
   if (!todayWallpaper.value)
     return ''
-  return todayWallpaper.value.url
+  return todayWallpaper.value.previewUrl || todayWallpaper.value.url
 })
 
 function handleClick() {

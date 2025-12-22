@@ -1,0 +1,32 @@
+# Wallpaper Gallery - robots.txt
+# https://github.com/IT-NuanxinPro/wallpaper-gallery
+
+# 允许搜索引擎索引主页
+User-agent: Googlebot
+User-agent: Bingbot
+User-agent: Slurp
+Allow: /
+Disallow: /data/
+Disallow: /assets/js/
+
+# 禁止常见爬虫和采集工具
+User-agent: Python-urllib
+User-agent: python-requests
+User-agent: Scrapy
+User-agent: curl
+User-agent: wget
+User-agent: HTTrack
+User-agent: MJ12bot
+User-agent: AhrefsBot
+User-agent: SemrushBot
+User-agent: DotBot
+Disallow: /
+
+# 默认规则
+User-agent: *
+Allow: /
+Disallow: /data/
+Disallow: /assets/js/
+
+# 限制爬取频率
+Crawl-delay: 10
