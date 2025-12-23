@@ -1,95 +1,111 @@
 // ========================================
-// 分页/无限滚动 Composable
+// 传统分页 Composable
 // ========================================
 
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
-export function usePagination(items, pageSize = 30) {
+export function usePagination(items, initialPageSize = 30) {
   const currentPage = ref(1)
-  const isLoading = ref(false)
-  const observerTarget = ref(null)
-  let observer = null
+  const pageSize = ref(initialPageSize)
+  const isPaused = ref(false) // 暂停分页切换（动画期间使用）
 
-  // 当前显示的项目
+  // 总页数
+  const totalPages = computed(() => Math.ceil(items.value.length / pageSize.value))
+
+  // 当前页显示的项目
   const displayedItems = computed(() => {
-    return items.value.slice(0, currentPage.value * pageSize)
+    const start = (currentPage.value - 1) * pageSize.value
+    const end = start + pageSize.value
+    return items.value.slice(start, end)
   })
 
-  // 是否还有更多
-  const hasMore = computed(() => {
-    return displayedItems.value.length < items.value.length
-  })
+  // 是否有上一页
+  const hasPrev = computed(() => currentPage.value > 1)
 
-  // 加载更多 - 同步立即加载，无延迟
-  const loadMore = () => {
-    if (!hasMore.value)
+  // 是否有下一页
+  const hasNext = computed(() => currentPage.value < totalPages.value)
+
+  // 跳转到指定页
+  const goToPage = (page) => {
+    if (isPaused.value)
       return
 
-    // 直接增加页数，同步更新
-    currentPage.value++
+    const targetPage = Math.max(1, Math.min(totalPages.value, page))
+    if (targetPage !== currentPage.value) {
+      currentPage.value = targetPage
+    }
   }
 
-  // 重置分页（当筛选条件变化时）
+  // 上一页
+  const prevPage = () => {
+    if (hasPrev.value && !isPaused.value) {
+      currentPage.value--
+    }
+  }
+
+  // 下一页
+  const nextPage = () => {
+    if (hasNext.value && !isPaused.value) {
+      currentPage.value++
+    }
+  }
+
+  // 设置每页条数
+  const setPageSize = (size) => {
+    if (size !== pageSize.value && size > 0) {
+      // 计算当前第一条数据的索引
+      const firstItemIndex = (currentPage.value - 1) * pageSize.value
+      // 更新 pageSize
+      pageSize.value = size
+      // 计算新的页码，尽量保持当前位置
+      const newPage = Math.floor(firstItemIndex / size) + 1
+      currentPage.value = Math.max(1, Math.min(newPage, totalPages.value))
+    }
+  }
+
+  // 重置到第一页（当筛选条件变化时）
   const resetPagination = () => {
     currentPage.value = 1
   }
 
-  // 监听 items 变化，重置分页
-  watch(() => items.value.length, () => {
-    resetPagination()
-  })
-
-  // 设置 Intersection Observer
-  const setupObserver = () => {
-    // 先断开旧的 observer
-    if (observer) {
-      observer.disconnect()
-    }
-
-    if (!observerTarget.value)
-      return
-
-    observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore.value) {
-          loadMore()
-        }
-      },
-      {
-        // 增加预加载距离到 800px，快速滚动也能及时加载
-        rootMargin: '800px',
-        threshold: 0,
-      },
-    )
-
-    observer.observe(observerTarget.value)
+  // 暂停分页切换
+  const pausePagination = () => {
+    isPaused.value = true
   }
 
-  // 监听 observerTarget 变化，确保 observer 正确绑定
-  watch(observerTarget, (newTarget) => {
-    if (newTarget) {
-      setupObserver()
+  // 恢复分页切换
+  const resumePagination = () => {
+    isPaused.value = false
+  }
+
+  // 监听 items 变化，重置到第一页
+  watch(() => items.value.length, (newLen, oldLen) => {
+    // 只有当数据真正变化时才重置（避免初始化时重复触发）
+    if (oldLen !== undefined && newLen !== oldLen) {
+      resetPagination()
     }
   })
 
-  onMounted(() => {
-    // 使用 nextTick 确保 DOM 渲染完成
-    nextTick(setupObserver)
-  })
-
-  onUnmounted(() => {
-    if (observer) {
-      observer.disconnect()
+  // 当总页数变化时，确保当前页不超出范围
+  watch(totalPages, (newTotal) => {
+    if (currentPage.value > newTotal && newTotal > 0) {
+      currentPage.value = newTotal
     }
   })
 
   return {
-    displayedItems,
-    hasMore,
-    isLoading,
-    loadMore,
-    resetPagination,
-    observerTarget,
     currentPage,
+    totalPages,
+    pageSize,
+    displayedItems,
+    hasPrev,
+    hasNext,
+    goToPage,
+    prevPage,
+    nextPage,
+    setPageSize,
+    resetPagination,
+    pausePagination,
+    resumePagination,
   }
 }

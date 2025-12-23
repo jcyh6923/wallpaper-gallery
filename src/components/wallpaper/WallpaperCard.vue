@@ -1,6 +1,6 @@
 <script setup>
 import { gsap } from 'gsap'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { IMAGE_PROXY } from '@/utils/constants'
 import { formatFileSize, getDisplayFilename, highlightText } from '@/utils/format'
 
@@ -51,28 +51,6 @@ const displayFilename = computed(() => getDisplayFilename(props.wallpaper.filena
 // 高亮文件名（对显示名称进行高亮）
 const highlightedFilename = computed(() => {
   return highlightText(displayFilename.value, props.searchQuery)
-})
-
-// GSAP 入场动画
-onMounted(() => {
-  if (cardRef.value) {
-    gsap.fromTo(
-      cardRef.value,
-      {
-        opacity: 0,
-        y: 40,
-        scale: 0.95,
-      },
-      {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        duration: 0.6,
-        delay: props.index * 0.05,
-        ease: 'power3.out',
-      },
-    )
-  }
 })
 
 function handleImageLoad() {
@@ -156,6 +134,7 @@ function handleMouseLeave(e) {
     ref="cardRef"
     class="wallpaper-card"
     :class="`view-${viewMode}`"
+    :data-flip-id="wallpaper.id"
     @click="handleClick"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
@@ -232,8 +211,9 @@ function handleMouseLeave(e) {
   overflow: hidden;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  opacity: 0;
   will-change: transform, box-shadow;
+  // 添加过渡效果，让圆角变化更平滑
+  transition: border-radius 0.4s ease;
 }
 
 .card-image {

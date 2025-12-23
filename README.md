@@ -17,9 +17,9 @@
 ### 视图与浏览
 
 - **多视图模式** - 网格视图、列表视图、瀑布流视图自由切换
-- **滑动切换动效** - 视图模式切换带有平滑滑动指示器
+- **丝滑切换动画** - 基于 GSAP Flip 插件的视图模式切换动画，卡片平滑形变过渡
 - **全屏浏览** - 沉浸式全屏浏览模式，ESC 退出
-- **无限滚动** - 智能分页加载，滚动自动加载更多
+- **传统分页** - 支持页码跳转、每页条数切换（10/20/30/50）
 - **今日精选** - 每日随机推荐精选壁纸
 
 ### 用户体验
@@ -60,7 +60,7 @@
 - **框架**: Vue 3.5 (Composition API + script setup)
 - **构建工具**: Vite 7
 - **UI 组件**: Element Plus (PC端) + Vant (移动端)
-- **动画**: GSAP
+- **动画**: GSAP + Flip 插件
 - **样式**: Sass + postcss-pxtorem (移动端适配)
 - **路由**: Vue Router 4
 - **代码混淆**: javascript-obfuscator (自定义 Vite 插件)
@@ -108,6 +108,7 @@ wallpaper-gallery/
 │   ├── composables/     # 组合式函数
 │   │   ├── useDevice.js     # 设备检测（UA、触摸、屏幕尺寸）
 │   │   ├── useFilter.js     # 筛选与动态分类
+│   │   ├── usePagination.js # 传统分页（页码跳转、每页条数）
 │   │   ├── useTheme.js      # 主题管理
 │   │   ├── useViewMode.js   # 视图模式
 │   │   ├── useWallpapers.js # 壁纸数据管理
