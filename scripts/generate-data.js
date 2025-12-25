@@ -44,6 +44,9 @@ const CONFIG = {
   // 输出路径
   OUTPUT_DIR: path.resolve(__dirname, '../public/data'),
 
+  // 是否启用分类拆分（按分类生成独立 JSON）
+  ENABLE_CATEGORY_SPLIT: true,
+
   // 三大系列配置
   SERIES: {
     desktop: {
@@ -76,7 +79,7 @@ const CONFIG = {
 
 /**
  * 通过本地目录获取壁纸列表（优先使用，避免 API 限流）
- * @returns {{ files: Array, repoPath: string } | null}
+ * @returns {{ files: Array, repoPath: string } | null} 壁纸文件列表和仓库路径，失败时返回 null
  */
 function fetchWallpapersFromLocal(seriesConfig) {
   // 尝试多个可能的路径
@@ -177,7 +180,7 @@ function extractCategory(filename) {
  * 获取图片分辨率信息
  * 使用 ImageMagick 的 identify 命令获取图片尺寸
  * @param {string} filePath - 图片文件路径
- * @returns {{ width: number, height: number } | null}
+ * @returns {{ width: number, height: number } | null} 图片宽高信息，失败时返回 null
  */
 function getImageDimensions(filePath) {
   try {
@@ -212,7 +215,7 @@ function getImageDimensions(filePath) {
  * 根据分辨率生成标签信息
  * @param {number} width
  * @param {number} height
- * @returns {{ label: string, type: string }}
+ * @returns {{ label: string, type: string }} 分辨率标签和类型
  */
 function getResolutionLabel(width, height) {
   const maxDim = Math.max(width, height)
@@ -308,6 +311,96 @@ function generateWallpaperData(files, seriesConfig, localRepoPath = null) {
 
     return wallpaperData
   })
+}
+
+/**
+ * 按分类拆分并生成独立的 JSON 文件
+ * @param {Array} wallpapers - 壁纸数据
+ * @param {string} seriesId - 系列 ID
+ * @param {object} seriesConfig - 系列配置
+ */
+function generateCategorySplitData(wallpapers, seriesId, seriesConfig) {
+  // 创建系列子目录
+  const seriesDir = path.join(CONFIG.OUTPUT_DIR, seriesId)
+  if (!fs.existsSync(seriesDir)) {
+    fs.mkdirSync(seriesDir, { recursive: true })
+  }
+
+  // 按分类分组
+  const categoryGroups = {}
+  wallpapers.forEach((wallpaper) => {
+    const category = wallpaper.category
+    if (!categoryGroups[category]) {
+      categoryGroups[category] = []
+    }
+    categoryGroups[category].push(wallpaper)
+  })
+
+  // 生成分类索引
+  const categories = Object.entries(categoryGroups).map(([categoryName, items]) => {
+    // 选择第一张作为分类缩略图
+    const thumbnail = items[0]?.thumbnailPath || items[0]?.path || ''
+
+    return {
+      id: categoryName.replace(/\s+/g, '-').toLowerCase(),
+      name: categoryName,
+      count: items.length,
+      thumbnail,
+      file: `${categoryName}.json`,
+    }
+  })
+
+  // 按数量降序排列
+  categories.sort((a, b) => b.count - a.count)
+
+  // 加密分类数据（敏感信息）
+  const categoriesBlob = encodeData(JSON.stringify(categories))
+
+  // 生成 index.json（加密版本）
+  const indexData = {
+    generatedAt: new Date().toISOString(),
+    series: seriesId,
+    seriesName: seriesConfig.name,
+    total: wallpapers.length,
+    categoryCount: categories.length,
+    // 加密的分类列表
+    blob: categoriesBlob,
+    schema: 2, // 版本 2：支持分类拆分
+    env: process.env.NODE_ENV || 'production',
+  }
+
+  const indexPath = path.join(seriesDir, 'index.json')
+  fs.writeFileSync(indexPath, JSON.stringify(indexData, null, 2))
+  console.log(`  Generated: ${seriesId}/index.json`)
+
+  // 为每个分类生成独立的 JSON 文件
+  Object.entries(categoryGroups).forEach(([categoryName, items]) => {
+    const categoryData = {
+      generatedAt: new Date().toISOString(),
+      series: seriesId,
+      category: categoryName,
+      total: items.length,
+      wallpapers: items,
+      schema: 2,
+    }
+
+    // 加密数据
+    const blob = encodeData(JSON.stringify(items))
+    const encryptedData = {
+      generatedAt: categoryData.generatedAt,
+      series: seriesId,
+      category: categoryName,
+      total: items.length,
+      blob,
+      schema: 2,
+    }
+
+    const categoryPath = path.join(seriesDir, `${categoryName}.json`)
+    fs.writeFileSync(categoryPath, JSON.stringify(encryptedData, null, 2))
+    console.log(`  Generated: ${seriesId}/${categoryName}.json (${items.length} items)`)
+  })
+
+  return categories
 }
 
 /**
@@ -409,6 +502,13 @@ async function processSeries(seriesId, seriesConfig) {
       .forEach(([res, count]) => {
         console.log(`    ${res}: ${count}`)
       })
+  }
+
+  // 如果启用了分类拆分，生成分类索引和分类文件
+  if (CONFIG.ENABLE_CATEGORY_SPLIT) {
+    console.log('')
+    console.log('  Generating category split data...')
+    generateCategorySplitData(wallpapers, seriesId, seriesConfig)
   }
 
   return { seriesId, count: wallpapers.length, wallpapers }

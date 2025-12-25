@@ -314,6 +314,13 @@ function handleMouseLeave(e) {
       display: none;
     }
   }
+
+  // 瀑布流模式：图片自适应高度，不使用 height: 100%
+  .view-masonry & {
+    img {
+      height: auto;
+    }
+  }
 }
 
 .image-skeleton {

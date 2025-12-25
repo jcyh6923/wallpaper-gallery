@@ -2,25 +2,6 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <!-- 禁用缓存 -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
-    <!-- Single Page Apps for GitHub Pages - 路径恢复脚本 -->
-    <script>
-      ;(function (l) {
-        if (l.search[1] === '/') {
-          var decoded = l.search
-            .slice(1)
-            .split('&')
-            .map(function (s) {
-              return s.replace(/~and~/g, '&')
-            })
-            .join('?')
-          window.history.replaceState(null, null, l.pathname.slice(0, -1) + decoded + l.hash)
-        }
-      })(window.location)
-    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta
       name="viewport"
@@ -30,6 +11,18 @@
     <meta name="keywords" content="壁纸,高清壁纸,4K壁纸,桌面壁纸,免费壁纸" />
     <meta name="theme-color" content="#6366f1" />
     <title>Wallpaper Gallery - 精选高清壁纸</title>
+
+    <!-- Import Map: 映射裸模块说明符到 CDN -->
+    <script type="importmap">
+      {
+        "imports": {
+          "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.24/dist/vue.esm-browser.prod.js",
+          "vue-router": "https://cdn.jsdelivr.net/npm/vue-router@4.6.4/dist/vue-router.esm-browser.js",
+          "@vue/devtools-api": "https://cdn.jsdelivr.net/npm/@vue/devtools-api@6.6.4/lib/esm/index.js",
+          "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.14.2/index.js"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="app"></div>

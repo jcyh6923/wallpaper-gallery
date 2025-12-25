@@ -7,15 +7,22 @@ import { decodeData } from '@/utils/codec'
 import { SERIES_CONFIG } from '@/utils/constants'
 import { buildImageUrl } from '@/utils/format'
 
-// 每个系列的数据缓存
-const seriesCache = ref({})
+// 每个系列的数据缓存（导出以便在路由守卫中使用）
+export const seriesCache = ref({})
+
+// 分类索引缓存（记录每个系列的分类列表）
+export const categoryIndexCache = ref({})
+
+// 分类数据缓存（记录每个系列的每个分类的数据）
+// 结构：{ desktop: { '动漫': [...], '风景': [...] }, mobile: { ... } }
+export const categoryDataCache = ref({})
 
 // 当前加载的系列
 const currentLoadedSeries = ref('')
 
 // 当前系列的壁纸数据
 const wallpapers = ref([])
-const loading = ref(false)
+const loading = ref(true) // 初始为 true，避免首次进入白屏
 const error = ref(null)
 
 // 格式化字节数
@@ -44,6 +51,214 @@ function transformWallpaperUrls(wallpaper) {
   }
 }
 
+/**
+ * 加载系列的分类索引
+ * @param {string} seriesId - 系列ID
+ * @returns {Promise<object>} 分类索引数据
+ */
+export async function loadCategoryIndex(seriesId) {
+  // 如果已有缓存，直接返回
+  if (categoryIndexCache.value[seriesId]) {
+    return categoryIndexCache.value[seriesId]
+  }
+
+  const seriesConfig = SERIES_CONFIG[seriesId]
+  if (!seriesConfig) {
+    throw new Error(`Invalid series: ${seriesId}`)
+  }
+
+  try {
+    const response = await fetch(seriesConfig.indexUrl)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    const data = await response.json()
+
+    // 解密分类列表（新架构使用 blob 字段）
+    let indexData
+    const encoded = data.blob || data.payload
+    if (encoded) {
+      try {
+        const jsonStr = decodeData(encoded)
+        const categories = JSON.parse(jsonStr)
+        // 重构索引数据结构
+        indexData = {
+          generatedAt: data.generatedAt,
+          series: data.series,
+          seriesName: data.seriesName,
+          total: data.total,
+          categoryCount: data.categoryCount,
+          categories, // 解密后的分类列表
+          schema: data.schema,
+          env: data.env,
+        }
+      }
+      catch (err) {
+        console.warn('Failed to decode category index, fallback to plain data:', err)
+        indexData = data
+      }
+    }
+    else {
+      // 向后兼容：未加密的索引数据
+      indexData = data
+    }
+
+    // 存入缓存
+    categoryIndexCache.value[seriesId] = indexData
+
+    return indexData
+  }
+  catch (e) {
+    console.error(`Failed to load category index for ${seriesId}:`, e)
+    throw e
+  }
+}
+
+/**
+ * 加载单个分类的数据
+ * @param {string} seriesId - 系列ID
+ * @param {string} categoryFile - 分类文件名（例如：'动漫.json'）
+ * @returns {Promise<Array>} 壁纸列表
+ */
+export async function loadCategoryData(seriesId, categoryFile) {
+  const seriesConfig = SERIES_CONFIG[seriesId]
+  if (!seriesConfig) {
+    throw new Error(`Invalid series: ${seriesId}`)
+  }
+
+  // 初始化分类数据缓存结构
+  if (!categoryDataCache.value[seriesId]) {
+    categoryDataCache.value[seriesId] = {}
+  }
+
+  // 如果已有缓存，直接返回
+  const categoryName = categoryFile.replace('.json', '')
+  if (categoryDataCache.value[seriesId][categoryName]) {
+    return categoryDataCache.value[seriesId][categoryName]
+  }
+
+  try {
+    const categoryUrl = `${seriesConfig.categoryBaseUrl}/${categoryFile}`
+    const response = await fetch(categoryUrl)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    const data = await response.json()
+
+    // 解密数据（新架构使用 blob 字段）
+    let wallpaperList
+    const encoded = data.blob || data.payload
+    if (encoded) {
+      try {
+        const jsonStr = decodeData(encoded)
+        const decoded = JSON.parse(jsonStr)
+        wallpaperList = decoded.wallpapers || decoded
+      }
+      catch (err) {
+        console.warn(`Failed to decode category ${categoryName}, fallback to plain data:`, err)
+        wallpaperList = data.wallpapers || []
+      }
+    }
+    else {
+      wallpaperList = data.wallpapers || []
+    }
+
+    // 处理壁纸数据：转换为完整 URL
+    const transformedList = wallpaperList.map(wallpaper => transformWallpaperUrls(wallpaper))
+
+    // 存入缓存
+    categoryDataCache.value[seriesId][categoryName] = transformedList
+
+    return transformedList
+  }
+  catch (e) {
+    console.error(`Failed to load category ${categoryName} for ${seriesId}:`, e)
+    throw e
+  }
+}
+
+/**
+ * 独立的数据加载函数（可在路由守卫中使用）
+ * @param {string} seriesId - 系列ID
+ * @param {boolean} useLegacyMode - 是否使用传统模式（加载整个 JSON）
+ * @returns {Promise<Array>} 壁纸列表
+ */
+export async function preloadWallpapers(seriesId, useLegacyMode = false) {
+  // 如果已有缓存，直接返回
+  if (seriesCache.value[seriesId]) {
+    return seriesCache.value[seriesId]
+  }
+
+  const seriesConfig = SERIES_CONFIG[seriesId]
+  if (!seriesConfig) {
+    throw new Error(`Invalid series: ${seriesId}`)
+  }
+
+  try {
+    // 尝试使用新架构（分类拆分）
+    if (!useLegacyMode) {
+      try {
+        // 1. 加载分类索引
+        const indexData = await loadCategoryIndex(seriesId)
+
+        // 2. 并行加载所有分类数据
+        const categoryFiles = indexData.categories.map(cat => cat.file)
+        const categoryDataPromises = categoryFiles.map(file => loadCategoryData(seriesId, file))
+        const categoryDataArrays = await Promise.all(categoryDataPromises)
+
+        // 3. 合并所有分类数据
+        const allWallpapers = categoryDataArrays.flat()
+
+        // 存入缓存
+        seriesCache.value[seriesId] = allWallpapers
+
+        return allWallpapers
+      }
+      catch (newArchError) {
+        console.warn(`⚠️ Failed to load with new architecture, falling back to legacy mode:`, newArchError)
+        // 如果新架构失败，回退到传统模式
+      }
+    }
+
+    // 传统模式：加载整个 JSON 文件（向后兼容）
+    const response = await fetch(seriesConfig.dataUrl)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    const data = await response.json()
+
+    // 支持加密后的结构：blob / payload 是自定义编码的字符串
+    let wallpaperList
+    const encoded = data.blob || data.payload
+    if (encoded) {
+      try {
+        const jsonStr = decodeData(encoded)
+        const decoded = JSON.parse(jsonStr)
+        wallpaperList = decoded.wallpapers || decoded
+      }
+      catch (err) {
+        console.warn('Failed to decode wallpaper payload, fallback to plain data:', err)
+        wallpaperList = data.wallpapers || []
+      }
+    }
+    else {
+      wallpaperList = data.wallpapers || data
+    }
+
+    // 处理壁纸数据：统一使用 buildImageUrl 拼接完整 URL（带版本号）
+    const transformedList = wallpaperList.map(wallpaper => transformWallpaperUrls(wallpaper))
+
+    // 存入缓存
+    seriesCache.value[seriesId] = transformedList
+
+    return transformedList
+  }
+  catch (e) {
+    console.error(`Failed to preload wallpapers for ${seriesId}:`, e)
+    throw e
+  }
+}
+
 export function useWallpapers() {
   /**
    * 加载指定系列的壁纸数据
@@ -62,6 +277,7 @@ export function useWallpapers() {
     if (!forceRefresh && seriesCache.value[seriesId]) {
       wallpapers.value = seriesCache.value[seriesId]
       currentLoadedSeries.value = seriesId
+      loading.value = false // 确保 loading 状态更新
       return
     }
 
@@ -69,40 +285,8 @@ export function useWallpapers() {
     error.value = null
 
     try {
-      // 加载 JSON 数据
-      const response = await fetch(seriesConfig.dataUrl)
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      const data = await response.json()
-
-      // 支持加密后的结构：blob / payload 是自定义编码的字符串
-      let wallpaperList
-      const encoded = data.blob || data.payload
-      if (encoded) {
-        try {
-          // 使用自定义解码函数（支持 v1. 前缀的新格式）
-          const jsonStr = decodeData(encoded)
-          const decoded = JSON.parse(jsonStr)
-          wallpaperList = decoded.wallpapers || decoded
-        }
-        catch (err) {
-          console.warn('Failed to decode wallpaper payload, fallback to plain data:', err)
-          wallpaperList = data.wallpapers || []
-        }
-      }
-      else {
-        // 兼容旧结构：直接从 wallpapers 字段或整个 data 中读取
-        wallpaperList = data.wallpapers || data
-      }
-
-      // 处理壁纸数据：统一使用 buildImageUrl 拼接完整 URL（带版本号）
-      const transformedList = wallpaperList.map((wallpaper) => {
-        return transformWallpaperUrls(wallpaper)
-      })
-
-      // 存入缓存
-      seriesCache.value[seriesId] = transformedList
+      // 使用独立的预加载函数
+      const transformedList = await preloadWallpapers(seriesId)
 
       // 更新当前数据
       wallpapers.value = transformedList
@@ -194,6 +378,37 @@ export function useWallpapers() {
     return null
   }
 
+  /**
+   * 获取系列的分类索引
+   * @param {string} seriesId - 系列ID
+   * @returns {Promise<object>} 分类索引数据
+   */
+  const getCategoryIndex = async (seriesId) => {
+    try {
+      return await loadCategoryIndex(seriesId)
+    }
+    catch (e) {
+      console.error(`Failed to get category index for ${seriesId}:`, e)
+      throw e
+    }
+  }
+
+  /**
+   * 加载单个分类的数据
+   * @param {string} seriesId - 系列ID
+   * @param {string} categoryFile - 分类文件名
+   * @returns {Promise<Array>} 壁纸列表
+   */
+  const loadCategory = async (seriesId, categoryFile) => {
+    try {
+      return await loadCategoryData(seriesId, categoryFile)
+    }
+    catch (e) {
+      console.error(`Failed to load category ${categoryFile} for ${seriesId}:`, e)
+      throw e
+    }
+  }
+
   return {
     wallpapers,
     loading,
@@ -209,5 +424,10 @@ export function useWallpapers() {
     getWallpaperIndex,
     getPrevWallpaper,
     getNextWallpaper,
+    // 分类相关功能
+    getCategoryIndex,
+    loadCategory,
+    categoryIndexCache,
+    categoryDataCache,
   }
 }

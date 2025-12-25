@@ -197,7 +197,7 @@ function closeSearch() {
           <h1 class="brand-title">
             Wallpaper Gallery
           </h1>
-          <span class="brand-subtitle">精选高清壁纸</span>
+          <span class="brand-subtitle">精选4k高清壁纸</span>
         </div>
       </div>
 

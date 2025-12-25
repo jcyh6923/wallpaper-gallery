@@ -29,6 +29,10 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(['update:sortBy', 'update:formatFilter', 'update:categoryFilter', 'reset'])
@@ -133,10 +137,15 @@ function resetFilters() {
   <div class="filter-panel" :class="{ 'has-filters': hasActiveFilters }">
     <div class="filter-left">
       <span class="result-count">
-        共 <strong class="count-value">{{ resultCount }}</strong> 张壁纸
-        <span v-if="resultCount !== totalCount" class="filtered-hint">
-          (筛选自 {{ totalCount }} 张)
-        </span>
+        <template v-if="loading">
+          加载中...
+        </template>
+        <template v-else>
+          共 <strong class="count-value">{{ resultCount }}</strong> 张壁纸
+          <span v-if="resultCount !== totalCount" class="filtered-hint">
+            (筛选自 {{ totalCount }} 张)
+          </span>
+        </template>
       </span>
 
       <!-- PC 端重置按钮 -->

@@ -6,7 +6,7 @@
 // - 本地开发：使用此默认值
 // - 线上构建：GitHub Actions 会自动替换为图床最新 tag
 // - jsdelivr 缓存策略：@main 分支有缓存，@tag 版本无缓存
-export const CDN_VERSION = 'v1.0.4'
+export const CDN_VERSION = 'v1.0.5'
 
 // CDN URL 动态构建（防止静态分析提取完整链接）
 const _cdnParts = {
@@ -30,7 +30,12 @@ export const SERIES_CONFIG = {
     icon: 'monitor',
     imageBaseUrl: `${CDN_BASE}/wallpaper/desktop`,
     thumbnailBaseUrl: `${CDN_BASE}/thumbnail/desktop`,
+    // 新架构：指向分类索引文件
+    indexUrl: `${import.meta.env.BASE_URL}data/desktop/index.json`,
+    // 向后兼容：保留旧的 dataUrl（如需回退）
     dataUrl: `${import.meta.env.BASE_URL}data/desktop.json`,
+    // 分类数据目录
+    categoryBaseUrl: `${import.meta.env.BASE_URL}data/desktop`,
     aspectRatio: '16/10',
   },
   mobile: {
@@ -39,7 +44,12 @@ export const SERIES_CONFIG = {
     icon: 'smartphone',
     imageBaseUrl: `${CDN_BASE}/wallpaper/mobile`,
     thumbnailBaseUrl: `${CDN_BASE}/thumbnail/mobile`,
+    // 新架构：指向分类索引文件
+    indexUrl: `${import.meta.env.BASE_URL}data/mobile/index.json`,
+    // 向后兼容：保留旧的 dataUrl（如需回退）
     dataUrl: `${import.meta.env.BASE_URL}data/mobile.json`,
+    // 分类数据目录
+    categoryBaseUrl: `${import.meta.env.BASE_URL}data/mobile`,
     aspectRatio: '9/16',
   },
   avatar: {
@@ -48,15 +58,20 @@ export const SERIES_CONFIG = {
     icon: 'user',
     imageBaseUrl: `${CDN_BASE}/wallpaper/avatar`,
     thumbnailBaseUrl: `${CDN_BASE}/thumbnail/avatar`,
+    // 新架构：指向分类索引文件
+    indexUrl: `${import.meta.env.BASE_URL}data/avatar/index.json`,
+    // 向后兼容：保留旧的 dataUrl（如需回退）
     dataUrl: `${import.meta.env.BASE_URL}data/avatar.json`,
+    // 分类数据目录
+    categoryBaseUrl: `${import.meta.env.BASE_URL}data/avatar`,
     aspectRatio: '1/1',
   },
 }
 
-// 设备可见的系列（PC端显示desktop+avatar，移动端显示mobile+avatar）
+// 设备可见的系列（PC端显示所有系列，移动端显示mobile+avatar）
 export const DEVICE_SERIES = {
-  desktop: ['desktop', 'avatar'], // PC端可见的系列
-  mobile: ['mobile', 'avatar'], // 移动端可见的系列
+  desktop: ['desktop', 'mobile', 'avatar'], // PC端可见所有系列
+  mobile: ['mobile', 'avatar'], // 移动端保持不变
 }
 
 // 默认系列（根据设备类型）

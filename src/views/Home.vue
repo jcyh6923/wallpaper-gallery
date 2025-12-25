@@ -112,6 +112,7 @@ onMounted(() => {
         :category-options="categoryOptions"
         :result-count="resultCount"
         :total-count="total"
+        :loading="loading"
         @reset="handleReset"
       />
 
