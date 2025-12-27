@@ -2,6 +2,7 @@
 import { gsap } from 'gsap'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import ImageCropModal from '@/components/wallpaper/ImageCropModal.vue'
 import { useDevice } from '@/composables/useDevice'
 import { useWallpaperType } from '@/composables/useWallpaperType'
 import { trackWallpaperDownload, trackWallpaperPreview } from '@/utils/analytics'
@@ -25,6 +26,22 @@ const { isMobile } = useDevice()
 
 // 获取当前系列
 const { currentSeries } = useWallpaperType()
+
+// 是否显示裁剪功能（仅 PC 端且仅 desktop 系列）
+const showCropFeature = computed(() => !isMobile.value && currentSeries.value === 'desktop')
+
+// 裁剪弹窗状态
+const isCropModalOpen = ref(false)
+
+// 打开裁剪弹窗
+function openCropModal() {
+  isCropModalOpen.value = true
+}
+
+// 关闭裁剪弹窗
+function closeCropModal() {
+  isCropModalOpen.value = false
+}
 
 const modalRef = ref(null)
 const contentRef = ref(null)
@@ -485,22 +502,49 @@ onUnmounted(() => {
               </p>
             </div>
 
-            <button
-              class="download-btn"
-              :disabled="downloading"
-              @click="handleDownload"
-            >
-              <LoadingSpinner v-if="downloading" size="sm" />
-              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
-              </svg>
-              <span>{{ downloading ? '下载中...' : '下载原图' }}</span>
-            </button>
+            <!-- 操作按钮组 -->
+            <div class="action-buttons">
+              <!-- 裁剪按钮（仅PC端 desktop 系列显示） -->
+              <button
+                v-if="showCropFeature"
+                class="crop-btn"
+                :disabled="!imageLoaded || imageError"
+                @click="openCropModal"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M6 2v4M6 14v8M18 2v4M18 14v8M2 6h4M14 6h8M2 18h4M14 18h8" />
+                </svg>
+                <span>智能裁剪</span>
+              </button>
+
+              <!-- 下载按钮 -->
+              <button
+                class="download-btn"
+                :disabled="downloading"
+                @click="handleDownload"
+              >
+                <LoadingSpinner v-if="downloading" size="sm" />
+                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                </svg>
+                <span>{{ downloading ? '下载中...' : '下载原图' }}</span>
+              </button>
+            </div>
           </template>
         </div>
       </div>
     </div>
   </Teleport>
+
+  <!-- 裁剪弹窗 -->
+  <ImageCropModal
+    v-if="wallpaper"
+    :image-url="wallpaper.url"
+    :filename="wallpaper.filename"
+    :is-open="isCropModalOpen"
+    :original-resolution="originalResolution"
+    @close="closeCropModal"
+  />
 </template>
 
 <style lang="scss" scoped>
@@ -1001,6 +1045,47 @@ onUnmounted(() => {
   z-index: 1;
 }
 
+// 操作按钮组
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  margin-top: auto;
+}
+
+// 裁剪按钮
+.crop-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  width: 100%;
+  padding: $spacing-md;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%);
+  color: var(--color-accent);
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  transition: all var(--transition-fast);
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(16, 185, 129, 0.25) 100%);
+    border-color: var(--color-accent);
+    transform: translateY(-2px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
 .download-btn {
   display: flex;
   align-items: center;
@@ -1014,7 +1099,6 @@ onUnmounted(() => {
   font-weight: $font-weight-semibold;
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
-  margin-top: auto;
 
   &:hover:not(:disabled) {
     background: var(--color-accent-hover);
