@@ -340,11 +340,19 @@ function getResolutionLabel(width, height) {
  * 生成壁纸数据（支持二级分类文件夹结构）
  */
 function generateWallpaperData(files, seriesConfig, localRepoPath = null) {
-  const now = new Date()
-
   return files.map((file, index) => {
     const ext = path.extname(file.name).replace('.', '').toUpperCase()
-    const uploadDate = new Date(now.getTime() - index * 3600000)
+
+    // 使用文件的真实修改时间，而不是生成假时间
+    let uploadDate
+    if (file.fullPath && fs.existsSync(file.fullPath)) {
+      const stats = fs.statSync(file.fullPath)
+      uploadDate = new Date(stats.mtime)
+    }
+    else {
+      // 回退：如果无法获取文件时间，使用当前时间
+      uploadDate = new Date()
+    }
 
     // 文件名（不含扩展名）
     const filenameNoExt = path.basename(file.name, path.extname(file.name))

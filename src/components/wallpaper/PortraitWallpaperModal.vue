@@ -10,6 +10,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { useWallpaperType } from '@/composables/useWallpaperType'
 import { trackWallpaperDownload, trackWallpaperPreview } from '@/utils/analytics'
 import { downloadFile, formatDate, formatFileSize, getDisplayFilename, getFileExtension, getResolutionLabel } from '@/utils/format'
+import { recordDownload, recordView } from '@/utils/supabase'
 
 const props = defineProps({
   wallpaper: {
@@ -44,6 +45,8 @@ watch(() => props.isOpen, async (isOpen) => {
     // 追踪壁纸预览事件
     if (props.wallpaper) {
       trackWallpaperPreview(props.wallpaper)
+      // 记录到 Supabase 统计
+      recordView(props.wallpaper, currentSeries.value)
     }
 
     // 保存当前滚动位置
@@ -198,6 +201,8 @@ async function handleDownload() {
   try {
     await downloadFile(props.wallpaper.url, props.wallpaper.filename)
     trackWallpaperDownload(props.wallpaper, currentSeries.value)
+    // 记录到 Supabase 统计
+    recordDownload(props.wallpaper, currentSeries.value)
   }
   finally {
     downloading.value = false

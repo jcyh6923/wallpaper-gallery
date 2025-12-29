@@ -7,6 +7,7 @@ import { useDevice } from '@/composables/useDevice'
 import { useWallpaperType } from '@/composables/useWallpaperType'
 import { trackWallpaperDownload, trackWallpaperPreview } from '@/utils/analytics'
 import { downloadFile, formatDate, formatFileSize, formatRelativeTime, getDisplayFilename, getFileExtension, getResolutionLabel } from '@/utils/format'
+import { recordDownload, recordView } from '@/utils/supabase'
 
 const props = defineProps({
   wallpaper: {
@@ -88,6 +89,8 @@ watch(() => props.isOpen, async (isOpen) => {
     // 追踪壁纸预览事件
     if (props.wallpaper) {
       trackWallpaperPreview(props.wallpaper)
+      // 记录到 Supabase 统计
+      recordView(props.wallpaper, currentSeries.value)
     }
 
     // 保存当前滚动位置
@@ -269,6 +272,8 @@ async function handleDownload() {
     await downloadFile(props.wallpaper.url, props.wallpaper.filename)
     // 追踪下载事件,包含系列信息
     trackWallpaperDownload(props.wallpaper, currentSeries.value)
+    // 记录到 Supabase 统计
+    recordDownload(props.wallpaper, currentSeries.value)
   }
   finally {
     downloading.value = false
