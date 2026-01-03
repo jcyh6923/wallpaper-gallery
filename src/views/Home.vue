@@ -220,7 +220,7 @@ onMounted(async () => {
         :category-options="categoryOptions"
         :subcategory-options="subcategoryOptions"
         :result-count="resultCount"
-        :total-count="wallpaperStore.total"
+        :total-count="wallpaperStore.displayTotal"
         :loading="loading"
         @reset="handleReset"
       />
@@ -244,7 +244,7 @@ onMounted(async () => {
         :wallpapers="filteredWallpapers"
         :loading="loading"
         :search-query="filterStore.searchQuery"
-        :total-count="wallpaperStore.total"
+        :total-count="wallpaperStore.displayTotal"
         :has-filters="hasActiveFilters"
         :popularity-data="popularityStore.allTimeData"
         @select="handleSelectWallpaper"

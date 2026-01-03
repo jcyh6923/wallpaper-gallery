@@ -33,11 +33,26 @@ export const useWallpaperStore = defineStore('wallpaper', () => {
   const loading = ref(false)
   const error = ref(null)
 
+  // 后台加载状态（用于控制 UI 是否显示加载中的数量变化）
+  const isBackgroundLoading = ref(false)
+
+  // 首次加载完成后的初始数量（用于在后台加载期间稳定显示）
+  const initialLoadedCount = ref(0)
+
   // ========================================
   // Getters
   // ========================================
 
   const total = computed(() => wallpapers.value.length)
+
+  // 用于 UI 显示的稳定总数（后台加载期间不会变化）
+  const displayTotal = computed(() => {
+    // 如果正在后台加载，显示初始加载的数量
+    if (isBackgroundLoading.value && initialLoadedCount.value > 0) {
+      return initialLoadedCount.value
+    }
+    return wallpapers.value.length
+  })
 
   const loaded = computed(() => wallpapers.value.length > 0)
 
@@ -219,6 +234,8 @@ export const useWallpaperStore = defineStore('wallpaper', () => {
     error.value = null
     currentLoadedSeries.value = seriesId
     loadedCategories.value = new Set()
+    isBackgroundLoading.value = false
+    initialLoadedCount.value = 0
 
     try {
       // 1. 加载分类索引
@@ -237,9 +254,13 @@ export const useWallpaperStore = defineStore('wallpaper', () => {
         loadedCategories.value.add(cat.file)
       })
 
-      // 5. 后台异步加载剩余分类（不阻塞）
+      // 5. 记录初始加载数量（用于 UI 稳定显示）
+      initialLoadedCount.value = wallpapers.value.length
+
+      // 6. 后台异步加载剩余分类（不阻塞）
       const remainingCategories = indexData.categories.slice(3)
       if (remainingCategories.length > 0) {
+        isBackgroundLoading.value = true
         loadRemainingCategories(seriesId, remainingCategories)
       }
     }
@@ -295,6 +316,10 @@ export const useWallpaperStore = defineStore('wallpaper', () => {
         // 继续加载下一批次
       }
     }
+
+    // 后台加载完成，更新状态
+    isBackgroundLoading.value = false
+    initialLoadedCount.value = wallpapers.value.length
   }
 
   /**
@@ -387,8 +412,10 @@ export const useWallpaperStore = defineStore('wallpaper', () => {
     error,
     currentLoadedSeries,
     loadedCategories,
+    isBackgroundLoading,
     // Getters
     total,
+    displayTotal,
     loaded,
     statistics,
     // Actions
