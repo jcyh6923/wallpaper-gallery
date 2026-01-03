@@ -162,6 +162,16 @@ router.beforeEach((to, from, next) => {
     return
   }
 
+  // 如果直接访问具体系列页面（包括刷新），保存用户选择
+  if (to.meta?.series) {
+    // 直接访问系列页面时，保存为用户选择（刷新时也会触发）
+    localStorage.setItem(STORAGE_KEY_SERIES, to.meta.series)
+    // 如果是从其他页面导航过来，也记录为明确选择
+    if (from.name) {
+      recordUserChoice(to.meta.series)
+    }
+  }
+
   // 处理首页的智能重定向
   if (to.path === '/' && !isInternalNavigation) {
     const recommendedSeries = getRecommendedSeries()
@@ -179,12 +189,6 @@ router.beforeEach((to, from, next) => {
 
   // 重置内部导航标记
   isInternalNavigation = false
-
-  // 如果是用户主动访问具体系列页面，记录选择
-  if (to.meta?.series && from.name) {
-    // 只有从其他页面导航过来才记录（排除初始加载）
-    recordUserChoice(to.meta.series)
-  }
 
   next()
 })

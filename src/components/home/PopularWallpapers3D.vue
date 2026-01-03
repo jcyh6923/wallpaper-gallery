@@ -381,53 +381,12 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- 加载提示文字 -->
+    <!-- 简洁的加载提示 -->
     <div class="loading-hint">
-      <div class="loading-hint__icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 6v6l4 2" />
-        </svg>
-      </div>
-      <h3 class="loading-hint__title">
-        拼命加载中，请稍后...
-      </h3>
-      <p class="loading-hint__subtitle">
-        正在为您准备精美壁纸
+      <div class="loading-spinner" />
+      <p class="loading-hint__text">
+        正在加载热门壁纸...
       </p>
-    </div>
-
-    <div class="skeleton-cards">
-      <div class="skeleton-card skeleton-card--side">
-        <div class="skeleton-shimmer" />
-        <div class="skeleton-card__icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <circle cx="8.5" cy="8.5" r="1.5" />
-            <path d="M21 15l-5-5L5 21" />
-          </svg>
-        </div>
-      </div>
-      <div class="skeleton-card skeleton-card--center">
-        <div class="skeleton-shimmer" />
-        <div class="skeleton-card__icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <circle cx="8.5" cy="8.5" r="1.5" />
-            <path d="M21 15l-5-5L5 21" />
-          </svg>
-        </div>
-      </div>
-      <div class="skeleton-card skeleton-card--side">
-        <div class="skeleton-shimmer" />
-        <div class="skeleton-card__icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <circle cx="8.5" cy="8.5" r="1.5" />
-            <path d="M21 15l-5-5L5 21" />
-          </svg>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -869,14 +828,14 @@ onUnmounted(() => {
   }
 }
 
-// 骨架屏 - 适配深色/浅色主题
+// 骨架屏 - 简洁加载样式
 .carousel-3d--loading {
   position: relative;
-  min-height: 560px; // 与主容器高度保持一致
+  min-height: 560px;
   border-radius: $radius-2xl;
-
-  // 深色模式（默认，因为轮播图区域本身是深色的）
   background: linear-gradient(180deg, #0a0a15 0%, #12121f 100%);
+  display: flex;
+  flex-direction: column;
 
   .carousel-3d__header {
     position: absolute;
@@ -905,211 +864,64 @@ onUnmounted(() => {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    text-align: center;
-    z-index: 10;
-    animation: float-up 2s ease-in-out infinite;
-  }
-
-  .loading-hint__icon {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 80px;
-    height: 80px;
-    margin: 0 auto $spacing-md;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(139, 92, 246, 0.4));
-    border-radius: 50%;
-    border: 2px solid rgba(99, 102, 241, 0.5);
-    animation: spin 3s linear infinite;
-
-    svg {
-      width: 40px;
-      height: 40px;
-      color: #a5b4fc;
-      filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.8));
-    }
-  }
-
-  .loading-hint__title {
-    font-size: $font-size-xl;
-    font-weight: $font-weight-bold;
-    margin-bottom: $spacing-xs;
-    color: #c7d2fe;
-    text-shadow:
-      0 0 20px rgba(165, 180, 252, 0.8),
-      0 0 40px rgba(139, 92, 246, 0.6);
-    animation: pulse-text 2s ease-in-out infinite;
-  }
-
-  .loading-hint__subtitle {
-    font-size: $font-size-sm;
-    color: rgba(255, 255, 255, 0.8);
-    opacity: 1;
-  }
-
-  .skeleton-cards {
-    display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
     gap: $spacing-md;
-    height: 400px;
-    padding-top: 60px;
-    position: relative;
-    z-index: 1;
   }
 
-  .skeleton-card {
-    position: relative;
-    background: rgba(255, 255, 255, 0.12);
-    border-radius: $radius-lg;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-
-    .skeleton-shimmer {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.15) 50%, transparent 100%);
-      animation: shimmer 2s infinite;
-    }
-
-    &--center {
-      width: 400px;
-      aspect-ratio: 16 / 9;
-      background: rgba(255, 255, 255, 0.18);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    &--side {
-      width: 300px;
-      aspect-ratio: 16 / 9;
-      opacity: 0.7;
-    }
+  .loading-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top-color: rgba(99, 102, 241, 0.8);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
   }
 
-  .skeleton-card__icon {
-    z-index: 2;
-    color: rgba(255, 255, 255, 0.5);
-
-    svg {
-      width: 40px;
-      height: 40px;
-      animation: pulse 2s ease-in-out infinite;
-    }
+  .loading-hint__text {
+    font-size: $font-size-sm;
+    color: rgba(255, 255, 255, 0.6);
   }
 }
 
-// 浅色主题下的骨架屏 - 使用 :root 选择器配合 scoped
-// 注意：由于 data-theme 在 html 元素上，需要使用非 scoped 的方式
+// 浅色主题下的骨架屏
 </style>
 
 <style lang="scss">
 // 浅色主题下的骨架屏（非 scoped，用于匹配 html[data-theme='light']）
 [data-theme='light'] {
   .carousel-3d--loading {
-    background: linear-gradient(180deg, #dde3ea 0%, #c8d1dc 100%) !important;
+    background: linear-gradient(180deg, #e8ecf1 0%, #dde3ea 100%) !important;
 
     .skeleton-badge {
-      background: rgba(0, 0, 0, 0.12) !important;
-      border-color: rgba(0, 0, 0, 0.08) !important;
+      background: rgba(0, 0, 0, 0.08) !important;
+      border-color: rgba(0, 0, 0, 0.06) !important;
     }
 
     .skeleton-badge__text {
       color: rgba(0, 0, 0, 0.6) !important;
     }
 
-    .loading-hint__icon {
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3)) !important;
-      border-color: rgba(99, 102, 241, 0.4) !important;
-
-      svg {
-        color: #4f46e5 !important;
-        filter: drop-shadow(0 0 8px rgba(79, 70, 229, 0.5)) !important;
-      }
-    }
-
-    .loading-hint__title {
-      color: #3730a3 !important;
-      text-shadow:
-        0 0 15px rgba(79, 70, 229, 0.4),
-        0 0 30px rgba(124, 58, 237, 0.3) !important;
-    }
-
-    .loading-hint__subtitle {
-      color: rgba(0, 0, 0, 0.7) !important;
-    }
-
-    .skeleton-card {
-      background: rgba(0, 0, 0, 0.1) !important;
+    .loading-spinner {
       border-color: rgba(0, 0, 0, 0.1) !important;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
-
-      .skeleton-shimmer {
-        background: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.08) 50%, transparent 100%) !important;
-      }
-
-      &--center {
-        background: rgba(0, 0, 0, 0.15) !important;
-        border-color: rgba(0, 0, 0, 0.12) !important;
-      }
+      border-top-color: rgba(99, 102, 241, 0.8) !important;
     }
 
-    .skeleton-card__icon {
-      color: rgba(0, 0, 0, 0.35) !important;
+    .loading-hint__text {
+      color: rgba(0, 0, 0, 0.5) !important;
     }
   }
 }
 </style>
 
 <style lang="scss" scoped>
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-@keyframes float-up {
-  0%,
-  100% {
-    transform: translate(-50%, -50%);
-  }
-  50% {
-    transform: translate(-50%, -55%);
-  }
-}
-
 @keyframes spin {
   0% {
     transform: rotate(0deg);
   }
   100% {
     transform: rotate(360deg);
-  }
-}
-
-@keyframes pulse-text {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
   }
 }
 
