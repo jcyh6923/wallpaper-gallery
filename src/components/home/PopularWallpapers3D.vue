@@ -21,14 +21,8 @@ const canvasRef = ref(null)
 // 状态
 const currentIndex = ref(0)
 const isAnimating = ref(false)
-const isEntered = ref(false)
 const isHovering = ref(false)
-const cardEntered = ref({})
 const imageLoaded = ref({})
-
-// 图片预加载状态
-const isPreloading = ref(true)
-const preloadProgress = ref(0)
 
 // 鼠标位置追踪（科技感光效）
 const mousePos = ref({ x: 0, y: 0 })
@@ -84,21 +78,6 @@ function getCardStyle(index) {
   const total = extendedList.value.length
   if (total === 0)
     return {}
-
-  // 入场动画前的初始位置
-  if (!cardEntered.value[index]) {
-    let relativePos = index - currentIndex.value
-    if (relativePos > total / 2)
-      relativePos -= total
-    if (relativePos < -total / 2)
-      relativePos += total
-    const startX = relativePos * 800
-    return {
-      transform: `translateX(${startX}px) translateZ(-800px) rotateY(0deg) scale(0.3)`,
-      opacity: 0,
-      zIndex: 0,
-    }
-  }
 
   let relativePos = index - currentIndex.value
   if (relativePos > total / 2)
@@ -251,35 +230,6 @@ function isImageLoaded(id) {
   return !!imageLoaded.value[id]
 }
 
-// 预加载所有图片
-async function preloadImages(list) {
-  if (list.length === 0)
-    return
-
-  isPreloading.value = true
-  preloadProgress.value = 0
-
-  const imagePromises = list.map((wallpaper, index) => {
-    return new Promise((resolve) => {
-      const img = new Image()
-      img.onload = () => {
-        imageLoaded.value[wallpaper.id] = true
-        preloadProgress.value = Math.round(((index + 1) / list.length) * 100)
-        resolve()
-      }
-      img.onerror = () => {
-        // 加载失败也标记为完成，避免卡住
-        preloadProgress.value = Math.round(((index + 1) / list.length) * 100)
-        resolve()
-      }
-      img.src = wallpaper.previewUrl || wallpaper.thumbnailUrl
-    })
-  })
-
-  await Promise.all(imagePromises)
-  isPreloading.value = false
-}
-
 // ============ 星空 + 流星动画 ============
 function initStarfield() {
   const canvas = canvasRef.value
@@ -393,60 +343,17 @@ function destroyStarfield() {
   }
 }
 
-// 入场动画
-function playEnterAnimation() {
-  isEntered.value = false
-  cardEntered.value = {}
-
-  nextTick(() => {
-    requestAnimationFrame(() => {
-      isEntered.value = true
-
-      setTimeout(() => initStarfield(), 200)
-
-      const total = extendedList.value.length
-      const centerIdx = currentIndex.value
-
-      // 按距离中心排序
-      const sorted = Array.from({ length: total }, (_, i) => i).sort((a, b) => {
-        let posA = a - centerIdx
-        let posB = b - centerIdx
-        if (posA > total / 2)
-          posA -= total
-        if (posA < -total / 2)
-          posA += total
-        if (posB > total / 2)
-          posB -= total
-        if (posB < -total / 2)
-          posB += total
-        return Math.abs(posA) - Math.abs(posB)
-      })
-
-      sorted.forEach((idx, order) => {
-        setTimeout(() => {
-          cardEntered.value[idx] = true
-        }, 200 + order * 120)
-      })
-
-      setTimeout(startAutoPlay, 200 + total * 120 + 500)
-    })
-  })
-}
-
-watch(carouselList, async (newList) => {
+watch(carouselList, (newList) => {
   if (newList.length > 0) {
     // 重置状态
     imageLoaded.value = {}
-    cardEntered.value = {}
     currentIndex.value = 0
-    isEntered.value = false
-    isPreloading.value = true
 
-    // 先预加载所有图片
-    await preloadImages(newList)
-
-    // 图片加载完成后播放入场动画
-    nextTick(playEnterAnimation)
+    // 初始化星空和自动播放
+    nextTick(() => {
+      initStarfield()
+      startAutoPlay()
+    })
   }
 }, { immediate: true })
 
@@ -466,8 +373,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- 骨架屏：数据加载中或图片预加载中 -->
-  <div v-if="carouselList.length === 0 || isPreloading" class="carousel-3d carousel-3d--loading">
+  <!-- 骨架屏：数据加载中 -->
+  <div v-if="carouselList.length === 0" class="carousel-3d carousel-3d--loading">
     <div class="carousel-3d__header">
       <div class="skeleton-badge">
         <span class="skeleton-badge__text">🔥 热门壁纸</span>
@@ -522,13 +429,6 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
-    <!-- 加载进度 -->
-    <div v-if="isPreloading && carouselList.length > 0" class="loading-progress">
-      <div class="progress-bar">
-        <div class="progress-fill" :style="{ width: `${preloadProgress}%` }" />
-      </div>
-      <span class="progress-text">加载中 {{ preloadProgress }}%</span>
-    </div>
   </div>
 
   <!-- 3D轮播 -->
@@ -536,7 +436,7 @@ onUnmounted(() => {
     v-else
     ref="containerRef"
     class="carousel-3d"
-    :class="{ 'is-entered': isEntered, 'is-hovering': isHovering }"
+    :class="{ 'is-hovering': isHovering }"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @mousemove="handleMouseMove"
@@ -626,17 +526,6 @@ onUnmounted(() => {
   background: linear-gradient(180deg, #05050a 0%, #0a0a12 50%, #050508 100%);
   min-height: 560px; // 增加高度以适应更大的中间图片
 
-  opacity: 0;
-  transform: translateY(30px);
-  transition:
-    opacity 0.8s ease,
-    transform 0.8s ease;
-
-  &.is-entered {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
   // 悬停时显示导航
   &.is-hovering {
     .carousel-3d__nav {
@@ -723,19 +612,6 @@ onUnmounted(() => {
   font-size: $font-size-sm;
   font-weight: $font-weight-semibold;
   box-shadow: 0 4px 20px rgba(249, 115, 22, 0.5);
-  opacity: 0;
-  transform: translateX(-30px);
-
-  .carousel-3d.is-entered & {
-    animation: badge-in 0.6s 0.3s ease-out forwards;
-  }
-}
-
-@keyframes badge-in {
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
 }
 
 // 舞台
@@ -1126,38 +1002,6 @@ onUnmounted(() => {
   }
 }
 
-// 加载进度条
-.loading-progress {
-  position: absolute;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.progress-bar {
-  width: 200px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
-  border-radius: 2px;
-  transition: width 0.3s ease;
-}
-
-.progress-text {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
-}
-
 // 浅色主题下的骨架屏 - 使用 :root 选择器配合 scoped
 // 注意：由于 data-theme 在 html 元素上，需要使用非 scoped 的方式
 </style>
@@ -1215,14 +1059,6 @@ onUnmounted(() => {
 
     .skeleton-card__icon {
       color: rgba(0, 0, 0, 0.35) !important;
-    }
-
-    .progress-bar {
-      background: rgba(0, 0, 0, 0.15) !important;
-    }
-
-    .progress-text {
-      color: rgba(0, 0, 0, 0.5) !important;
     }
   }
 }
