@@ -76,12 +76,9 @@ const router = createRouter({
 const STORAGE_KEY_SERIES = 'wallpaper-gallery-current-series'
 const STORAGE_KEY_USER_CHOICE = 'wallpaper-gallery-user-explicit-choice'
 
-// 导航标记，防止循环
-let isInternalNavigation = false
-let navigationCount = 0
-let lastNavigationTime = 0
-const MAX_NAVIGATIONS_PER_SECOND = 5 // 每秒最大导航次数
-const NAVIGATION_RESET_TIME = 1000 // 重置计数器的时间间隔
+// 防止循环重定向的标记（使用 Set 记录最近的重定向路径）
+const recentRedirects = new Set()
+const MAX_REDIRECT_HISTORY = 3
 
 /**
  * 获取当前设备类型
@@ -145,23 +142,6 @@ router.beforeEach((to, from, next) => {
     document.title = to.meta.title
   }
 
-  // 循环检测：检查短时间内的导航次数
-  const now = Date.now()
-  if (now - lastNavigationTime > NAVIGATION_RESET_TIME) {
-    // 超过重置时间，清零计数器
-    navigationCount = 0
-  }
-  lastNavigationTime = now
-  navigationCount++
-
-  // 如果导航次数过多，可能是循环，直接放行避免卡死
-  if (navigationCount > MAX_NAVIGATIONS_PER_SECOND) {
-    console.warn('[Router] 检测到可能的导航循环，跳过重定向')
-    isInternalNavigation = false
-    next()
-    return
-  }
-
   // 如果直接访问具体系列页面（包括刷新），保存用户选择
   if (to.meta?.series) {
     // 直接访问系列页面时，保存为用户选择（刷新时也会触发）
@@ -173,29 +153,41 @@ router.beforeEach((to, from, next) => {
   }
 
   // 处理首页的智能重定向
-  if (to.path === '/' && !isInternalNavigation) {
+  if (to.path === '/') {
     const recommendedSeries = getRecommendedSeries()
     const targetPath = `/${recommendedSeries}`
 
-    // 安全检查：确保目标路径有效且不同于当前路径
-    if (recommendedSeries && targetPath !== from.path) {
+    // 安全检查：防止循环重定向
+    // 1. 确保目标路径有效
+    // 2. 确保目标路径不同于当前路径
+    // 3. 确保不在最近的重定向历史中
+    const redirectKey = `${from.path} -> ${targetPath}`
+    if (
+      recommendedSeries
+      && targetPath !== from.path
+      && !recentRedirects.has(redirectKey)
+    ) {
+      // 记录重定向历史（防止循环）
+      recentRedirects.add(redirectKey)
+      if (recentRedirects.size > MAX_REDIRECT_HISTORY) {
+        // 只保留最近 N 条记录
+        const firstKey = recentRedirects.values().next().value
+        recentRedirects.delete(firstKey)
+      }
+
       // 首页访问时，静默重定向到推荐系列
       // 使用 replace 避免产生历史记录
-      isInternalNavigation = true
       next({ path: targetPath, replace: true })
       return
     }
   }
 
-  // 重置内部导航标记
-  isInternalNavigation = false
+  // 清除重定向历史（非首页访问时）
+  if (to.path !== '/') {
+    recentRedirects.clear()
+  }
 
   next()
-})
-
-// 导航完成后的清理
-router.afterEach(() => {
-  isInternalNavigation = false
 })
 
 export default router

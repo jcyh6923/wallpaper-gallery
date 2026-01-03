@@ -1,8 +1,10 @@
 <script setup>
-import { useWallpapers } from '@/composables/useWallpapers'
+import { storeToRefs } from 'pinia'
+import { useWallpaperStore } from '@/stores/wallpaper'
 
 const currentYear = new Date().getFullYear()
-const { statistics } = useWallpapers()
+const wallpaperStore = useWallpaperStore()
+const { statistics } = storeToRefs(wallpaperStore)
 </script>
 
 <template>

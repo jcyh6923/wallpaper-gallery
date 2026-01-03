@@ -32,12 +32,17 @@ export const useWallpaperStore = defineStore('wallpaper', () => {
   // 加载状态
   const loading = ref(false)
   const error = ref(null)
+  const errorType = ref(null) // 'network' | 'parse' | 'format' | 'unknown'
 
   // 后台加载状态（用于控制 UI 是否显示加载中的数量变化）
   const isBackgroundLoading = ref(false)
 
   // 首次加载完成后的初始数量（用于在后台加载期间稳定显示）
   const initialLoadedCount = ref(0)
+
+  // 重试配置
+  const MAX_RETRIES = 3
+  const RETRY_DELAY = 1000 // 1秒
 
   // ========================================
   // Getters
@@ -63,17 +68,110 @@ export const useWallpaperStore = defineStore('wallpaper', () => {
     const pngCount = items.filter(w => w.format === 'PNG').length
     const totalSize = items.reduce((sum, w) => sum + (w.size || 0), 0)
 
+    // 动态导入格式化函数（避免循环依赖）
+    let totalSizeFormatted = '0 B'
+    if (totalSize > 0) {
+      try {
+        // 使用简单的格式化逻辑，避免导入依赖
+        const units = ['B', 'KB', 'MB', 'GB']
+        const k = 1024
+        const i = Math.floor(Math.log(totalSize) / Math.log(k))
+        totalSizeFormatted = `${Number.parseFloat((totalSize / k ** i).toFixed(2))} ${units[i]}`
+      }
+      catch (e) {
+        totalSizeFormatted = `${totalSize} B`
+      }
+    }
+
     return {
       total: items.length,
       jpg: jpgCount,
       png: pngCount,
       totalSize,
+      totalSizeFormatted,
     }
   })
 
   // ========================================
   // Helper Functions
   // ========================================
+
+  /**
+   * 分类错误类型
+   */
+  function classifyError(error) {
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      return 'network'
+    }
+    if (error.message && error.message.includes('HTTP error')) {
+      return 'network'
+    }
+    if (error instanceof SyntaxError || error.message.includes('JSON')) {
+      return 'parse'
+    }
+    if (error.message && (error.message.includes('Invalid') || error.message.includes('format'))) {
+      return 'format'
+    }
+    return 'unknown'
+  }
+
+  /**
+   * 获取用户友好的错误信息
+   */
+  function getErrorMessage(error, errorType, context = '') {
+    const contextStr = context ? ` (${context})` : ''
+    switch (errorType) {
+      case 'network':
+        return `网络连接失败，请检查网络设置${contextStr}`
+      case 'parse':
+        return `数据解析失败，可能是数据格式错误${contextStr}`
+      case 'format':
+        return `数据格式错误${contextStr}`
+      default:
+        return error.message || `加载失败${contextStr}`
+    }
+  }
+
+  /**
+   * 延迟函数
+   */
+  function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  /**
+   * 带重试的 fetch 请求
+   */
+  async function fetchWithRetry(url, options = {}, retries = MAX_RETRIES) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const response = await fetch(url, options)
+        if (!response.ok) {
+          // 4xx 错误不重试
+          if (response.status >= 400 && response.status < 500) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+          }
+          // 5xx 错误重试
+          if (i < retries - 1) {
+            await delay(RETRY_DELAY * (i + 1))
+            continue
+          }
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        return response
+      }
+      catch (error) {
+        // 网络错误重试
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          if (i < retries - 1) {
+            await delay(RETRY_DELAY * (i + 1))
+            continue
+          }
+        }
+        throw error
+      }
+    }
+  }
 
   /**
    * 解码数据（优先使用 Worker，降级到主线程）
@@ -121,15 +219,22 @@ export const useWallpaperStore = defineStore('wallpaper', () => {
 
     const seriesConfig = SERIES_CONFIG[seriesId]
     if (!seriesConfig) {
-      throw new Error(`Invalid series: ${seriesId}`)
+      const err = new Error(`Invalid series: ${seriesId}`)
+      errorType.value = 'format'
+      throw err
     }
 
     try {
-      const response = await fetch(seriesConfig.indexUrl)
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+      const response = await fetchWithRetry(seriesConfig.indexUrl)
+      let data
+      try {
+        data = await response.json()
       }
-      const data = await response.json()
+      catch (parseError) {
+        const err = new Error(`Failed to parse JSON: ${parseError.message}`)
+        errorType.value = 'parse'
+        throw err
+      }
 
       // 解密分类列表（使用 Worker）
       let indexData
@@ -150,11 +255,26 @@ export const useWallpaperStore = defineStore('wallpaper', () => {
         }
         catch (err) {
           console.warn('Failed to decode category index:', err)
-          indexData = data
+          // 如果解码失败，尝试使用原始数据
+          if (data.categories) {
+            indexData = data
+          }
+          else {
+            const decodeErr = new Error('Failed to decode category index')
+            errorType.value = 'parse'
+            throw decodeErr
+          }
         }
       }
       else {
         indexData = data
+      }
+
+      // 验证数据格式
+      if (!indexData.categories || !Array.isArray(indexData.categories)) {
+        const err = new Error('Invalid index data format: missing categories array')
+        errorType.value = 'format'
+        throw err
       }
 
       // 存入缓存
@@ -162,6 +282,8 @@ export const useWallpaperStore = defineStore('wallpaper', () => {
       return indexData
     }
     catch (e) {
+      const errType = classifyError(e)
+      errorType.value = errType
       console.error(`Failed to load series index for ${seriesId}:`, e)
       throw e
     }
@@ -180,16 +302,23 @@ export const useWallpaperStore = defineStore('wallpaper', () => {
 
     const seriesConfig = SERIES_CONFIG[seriesId]
     if (!seriesConfig) {
-      throw new Error(`Invalid series: ${seriesId}`)
+      const err = new Error(`Invalid series: ${seriesId}`)
+      errorType.value = 'format'
+      throw err
     }
 
     try {
       const categoryUrl = `${seriesConfig.categoryBaseUrl}/${categoryFile}`
-      const response = await fetch(categoryUrl)
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+      const response = await fetchWithRetry(categoryUrl)
+      let data
+      try {
+        data = await response.json()
       }
-      const data = await response.json()
+      catch (parseError) {
+        const err = new Error(`Failed to parse JSON for category ${categoryFile}: ${parseError.message}`)
+        errorType.value = 'parse'
+        throw err
+      }
 
       // 解密数据（使用 Worker）
       let wallpaperList
@@ -201,11 +330,24 @@ export const useWallpaperStore = defineStore('wallpaper', () => {
         }
         catch (err) {
           console.warn(`Failed to decode category ${categoryFile}:`, err)
+          // 如果解码失败，尝试使用原始数据
           wallpaperList = data.wallpapers || []
+          if (!wallpaperList || !Array.isArray(wallpaperList)) {
+            const decodeErr = new Error(`Failed to decode category ${categoryFile}`)
+            errorType.value = 'parse'
+            throw decodeErr
+          }
         }
       }
       else {
         wallpaperList = data.wallpapers || []
+      }
+
+      // 验证数据格式
+      if (!Array.isArray(wallpaperList)) {
+        const err = new Error(`Invalid category data format: ${categoryFile}`)
+        errorType.value = 'format'
+        throw err
       }
 
       // 转换 URL
@@ -216,6 +358,8 @@ export const useWallpaperStore = defineStore('wallpaper', () => {
       return transformedList
     }
     catch (e) {
+      const errType = classifyError(e)
+      errorType.value = errType
       console.error(`Failed to load category ${categoryFile}:`, e)
       throw e
     }
@@ -232,6 +376,7 @@ export const useWallpaperStore = defineStore('wallpaper', () => {
 
     loading.value = true
     error.value = null
+    errorType.value = null
     currentLoadedSeries.value = seriesId
     loadedCategories.value = new Set()
     isBackgroundLoading.value = false
@@ -256,10 +401,16 @@ export const useWallpaperStore = defineStore('wallpaper', () => {
 
       // 5. 记录初始加载数量（用于 UI 稳定显示）
       initialLoadedCount.value = wallpapers.value.length
+
+      // 清除错误状态
+      error.value = null
+      errorType.value = null
     }
     catch (e) {
       console.error(`Failed to init series ${seriesId}:`, e)
-      error.value = e.message || '加载壁纸数据失败'
+      const errType = errorType.value || classifyError(e)
+      errorType.value = errType
+      error.value = getErrorMessage(e, errType, `系列: ${seriesId}`)
       wallpapers.value = []
     }
     finally {
@@ -415,6 +566,7 @@ export const useWallpaperStore = defineStore('wallpaper', () => {
     wallpapers,
     loading,
     error,
+    errorType,
     currentLoadedSeries,
     loadedCategories,
     isBackgroundLoading,
