@@ -9,6 +9,7 @@ import { gsap } from 'gsap'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { trackImageCrop } from '@/utils/analytics'
+import { buildRawImageUrl } from '@/utils/format'
 import 'cropperjs/dist/cropper.css'
 
 const props = defineProps({
@@ -55,6 +56,7 @@ const showCustomInput = ref(false)
 const customWidth = ref('')
 const customHeight = ref('')
 const previewUpdateTimer = ref(null)
+const actualImageUrl = ref('') // 实际使用的图片 URL（可能回退到 GitHub Raw）
 
 // 获取用户屏幕分辨率
 const screenResolution = ref({
@@ -92,6 +94,9 @@ const ratioPresets = computed(() => [
 const currentPreset = computed(() =>
   ratioPresets.value.find(p => p.id === selectedRatio.value) || ratioPresets.value[0],
 )
+
+// 处理大文件：使用 jsDelivr CDN，如果失败则回退到 GitHub Raw
+const croppedImageUrl = computed(() => actualImageUrl.value || props.imageUrl)
 
 // 初始化 Cropper
 function initCropper() {
@@ -314,6 +319,17 @@ function handleImageLoad() {
 
 // 图片加载失败
 function handleImageError() {
+  // 如果还没有尝试过回退，则回退到 GitHub Raw CDN
+  if (!actualImageUrl.value && props.imageUrl) {
+    console.warn('[ImageCropModal] 图片加载失败，尝试回退到 GitHub Raw CDN')
+    actualImageUrl.value = buildRawImageUrl(props.imageUrl)
+    imageError.value = false
+    imageLoaded.value = false
+    // 稍后重试加载
+    return
+  }
+
+  // 如果已经回退过，则显示错误
   imageError.value = true
   imageLoaded.value = true
 }
@@ -550,7 +566,7 @@ onUnmounted(() => {
                 <img
                   v-show="imageLoaded && !imageError"
                   ref="imageRef"
-                  :src="imageUrl"
+                  :src="croppedImageUrl"
                   class="crop-image"
                   crossorigin="anonymous"
                   @load="handleImageLoad"

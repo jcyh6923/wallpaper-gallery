@@ -265,7 +265,7 @@ export async function downloadFile(url, filename, delay = 300) {
  * @param {string} cdnUrl - jsDelivr CDN URL
  * @returns {string} GitHub Raw CDN URL
  */
-function buildRawImageUrl(cdnUrl) {
+export function buildRawImageUrl(cdnUrl) {
   // 从 jsDelivr URL 提取路径
   // 示例: https://cdn.jsdelivr.net/gh/IT-NuanxinPro/nuanXinProPic@v1.1.14/wallpaper/...
   const match = cdnUrl.match(/\/gh\/IT-NuanxinPro\/nuanXinProPic@([^/]+)(\/.*)/)
