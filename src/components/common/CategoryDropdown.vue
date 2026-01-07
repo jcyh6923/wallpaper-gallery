@@ -229,7 +229,10 @@ onUnmounted(() => {
   font-size: 14px;
   color: var(--color-text-primary);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+  will-change: border-color;
 
   &:hover {
     border-color: var(--color-border-hover, var(--color-border));
@@ -237,6 +240,7 @@ onUnmounted(() => {
 
   &.is-open {
     border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
 
     .trigger-arrow {
       transform: rotate(180deg);
@@ -260,24 +264,31 @@ onUnmounted(() => {
   width: 14px;
   height: 14px;
   color: var(--color-text-muted);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.2s ease;
   flex-shrink: 0;
 }
 
-// 下拉面板 - 适配深色模式
+// 下拉面板 - 适配深色模式，固定宽度避免抖动
 .dropdown-panel {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 4px);
   left: 0;
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
-  border-radius: 4px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   overflow: hidden;
   z-index: 1000;
+  // 性能优化
+  will-change: transform, opacity;
+  contain: layout style;
+  // 固定宽度，避免内容变化导致抖动
+  width: 380px;
 
   // 没有二级分类时，只显示左侧
   &.single-column {
+    width: 180px;
+
     .primary-list {
       border-right: none;
     }
@@ -286,22 +297,24 @@ onUnmounted(() => {
 
 .panel-content {
   display: flex;
-  max-height: 400px;
+  max-height: 360px;
 }
 
-// 分类列表 - 适配深色模式
+// 分类列表 - 适配深色模式，固定宽度
 .category-list {
   display: flex;
   flex-direction: column;
 
   &.primary-list {
-    min-width: 180px;
+    width: 180px;
+    flex-shrink: 0;
     border-right: 1px solid var(--color-border);
     background: var(--color-bg-secondary);
   }
 
   &.secondary-list {
-    min-width: 200px;
+    width: 200px;
+    flex-shrink: 0;
     background: var(--color-bg-card);
   }
 }
@@ -401,53 +414,53 @@ onUnmounted(() => {
 }
 
 // ========================================
-// 动画效果
+// 动画效果 - 优化性能，减少卡顿
 // ========================================
 
-// 下拉面板动画
+// 下拉面板动画 - 使用 transform 提升性能
 .dropdown-enter-active {
-  animation: dropdownIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: dropdownIn 0.15s ease-out;
 }
 
 .dropdown-leave-active {
-  animation: dropdownOut 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: dropdownOut 0.1s ease-in;
 }
 
 @keyframes dropdownIn {
   0% {
     opacity: 0;
-    transform: translateY(-10px) scale(0.95);
+    transform: translateY(-8px);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
 @keyframes dropdownOut {
   0% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
   100% {
     opacity: 0;
-    transform: translateY(-10px) scale(0.95);
+    transform: translateY(-8px);
   }
 }
 
-// 右侧面板滑入动画
+// 右侧面板滑入动画 - 简化动画减少卡顿
 .slide-right-enter-active {
-  animation: slideRightIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideRightIn 0.15s ease-out;
 }
 
 .slide-right-leave-active {
-  animation: slideRightOut 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideRightOut 0.1s ease-in;
 }
 
 @keyframes slideRightIn {
   0% {
     opacity: 0;
-    transform: translateX(-20px);
+    transform: translateX(-12px);
   }
   100% {
     opacity: 1;
@@ -462,7 +475,7 @@ onUnmounted(() => {
   }
   100% {
     opacity: 0;
-    transform: translateX(-20px);
+    transform: translateX(-12px);
   }
 }
 

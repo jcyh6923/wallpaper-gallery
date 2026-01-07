@@ -9,7 +9,7 @@ const props = defineProps({
   // 可选的日期范围
   minDate: {
     type: String,
-    default: '2021-02', // Bing 数据最早日期
+    default: '2019-06', // Bing 数据最早日期（从 2019 年 6 月开始）
   },
   maxDate: {
     type: String,

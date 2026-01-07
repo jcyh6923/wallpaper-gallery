@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
+import AnimatedNumber from '@/components/common/AnimatedNumber.vue'
 import BingDatePicker from '@/components/common/BingDatePicker.vue'
 import CategoryDropdown from '@/components/common/CategoryDropdown.vue'
 import MobileCategoryDrawer from '@/components/common/MobileCategoryDrawer.vue'
@@ -216,9 +217,9 @@ function resetFilters() {
           加载中...
         </template>
         <template v-else>
-          共 <strong class="count-value">{{ resultCount }}</strong> 张壁纸
+          共 <AnimatedNumber :value="resultCount" class="count-value" /> 张壁纸
           <span v-if="resultCount !== totalCount" class="filtered-hint">
-            (筛选自 {{ totalCount }} 张)
+            (筛选自 <AnimatedNumber :value="totalCount" :duration="0.4" /> 张)
           </span>
         </template>
       </span>

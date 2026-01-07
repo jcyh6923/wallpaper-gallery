@@ -79,13 +79,14 @@ function getViewCount(filename) {
 const gridRef = ref(null)
 const wrapperRef = ref(null)
 const isAnimating = ref(false)
-// PC端用于控制动画切换的视图模式
+// 用于控制动画切换的视图模式（PC端和移动端统一使用）
 const displayViewMode = ref(viewMode.value)
 // 实际渲染使用的视图模式
 const effectiveViewMode = computed(() => {
   if (isMobileOrTablet.value) {
     // 移动端：只支持 grid 和 list，瀑布流自动转为 grid
-    return viewMode.value === 'masonry' ? 'grid' : viewMode.value
+    const mode = displayViewMode.value
+    return mode === 'masonry' ? 'grid' : mode
   }
   return displayViewMode.value
 })
@@ -289,13 +290,9 @@ const isFlipWarmedUp = ref(false)
 
 // ========================================
 // 视图切换动画 - 使用 GSAP Flip 实现丝滑形态变换
+// 移动端和 PC 端统一支持（移动端只有 grid/list 两种模式）
 // ========================================
 watch(viewMode, async (newMode, oldMode) => {
-  // 移动端：直接切换，不需要 Flip 动画
-  if (isMobileOrTablet.value) {
-    return
-  }
-
   if (!gridRef.value || newMode === oldMode)
     return
 
@@ -333,14 +330,29 @@ watch(viewMode, async (newMode, oldMode) => {
     displayViewMode.value = newMode
     await nextTick()
 
+    // 移动端使用更快的动画，减少等待感
+    const animationConfig = isMobileOrTablet.value
+      ? {
+          duration: 0.35,
+          ease: 'power2.out',
+          stagger: {
+            amount: 0.08,
+            from: 'start',
+            grid: [2, 'auto'], // 移动端 2 列布局
+          },
+        }
+      : {
+          duration: 0.45,
+          ease: 'power2.inOut',
+          stagger: {
+            amount: 0.12,
+            from: 'start',
+          },
+        }
+
     // 执行 Flip 动画
     Flip.from(state, {
-      duration: 0.45,
-      ease: 'power2.inOut',
-      stagger: {
-        amount: 0.12,
-        from: 'start',
-      },
+      ...animationConfig,
       absolute: true,
       scale: true,
       onComplete: () => {
