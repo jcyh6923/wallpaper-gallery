@@ -1,0 +1,25 @@
+{
+  "exportedAt": "2026-01-12T04:11:36.726Z",
+  "series": {
+    "desktop": {
+      "count": 218,
+      "totalViews": 3456,
+      "totalDownloads": 989
+    },
+    "mobile": {
+      "count": 153,
+      "totalViews": 1128,
+      "totalDownloads": 171
+    },
+    "avatar": {
+      "count": 78,
+      "totalViews": 372,
+      "totalDownloads": 145
+    },
+    "bing": {
+      "count": 86,
+      "totalViews": 237,
+      "totalDownloads": 30
+    }
+  }
+}
