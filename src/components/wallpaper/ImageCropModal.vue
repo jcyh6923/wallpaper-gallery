@@ -60,31 +60,6 @@ const previewRAF = ref(null) // requestAnimationFrame ID
 const actualImageUrl = ref('') // 实际使用的图片 URL（可能回退到 GitHub Raw）
 const imageNaturalSize = ref({ width: 0, height: 0 }) // 图片原始尺寸
 
-// 根据图片比例计算弹窗宽度
-const modalWidth = computed(() => {
-  if (!imageNaturalSize.value.width || !imageNaturalSize.value.height) {
-    return '1200px' // 默认宽度
-  }
-  
-  const imgRatio = imageNaturalSize.value.width / imageNaturalSize.value.height
-  const panelWidth = 280 // 右侧面板宽度
-  const maxHeight = window.innerHeight * 0.9 // 最大高度 90vh
-  const headerHeight = 50 // header 高度
-  const previewHeight = 260 // 预览区高度
-  const availableHeight = maxHeight - headerHeight - previewHeight
-  
-  // 根据图片比例计算裁剪区域需要的宽度
-  let cropAreaWidth = availableHeight * imgRatio
-  
-  // 加上面板宽度和边距
-  let totalWidth = cropAreaWidth + panelWidth + 40
-  
-  // 限制最小和最大宽度
-  totalWidth = Math.max(800, Math.min(totalWidth, window.innerWidth * 0.95))
-  
-  return `${Math.round(totalWidth)}px`
-})
-
 // 获取用户屏幕分辨率
 const screenResolution = ref({
   width: Math.round(window.screen.width * (window.devicePixelRatio || 1)),
@@ -251,7 +226,7 @@ function updatePreview() {
       const dpr = Math.min(window.devicePixelRatio || 1, 2) // 限制最大 2x
       const canvasWidth = containerWidth * dpr
       const canvasHeight = containerHeight * dpr
-      
+
       // 只在尺寸变化时重设 canvas
       if (previewCanvasRef.value.width !== canvasWidth || previewCanvasRef.value.height !== canvasHeight) {
         previewCanvasRef.value.width = canvasWidth
@@ -1003,11 +978,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(15, 23, 42, 0.6) 0%,
-    rgba(15, 23, 42, 0.4) 100%
-  );
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.6) 0%, rgba(15, 23, 42, 0.4) 100%);
 }
 
 // Crop Area - 占据主要空间
@@ -1209,7 +1180,7 @@ onUnmounted(() => {
   &::-webkit-scrollbar-thumb {
     background: rgba(102, 126, 234, 0.3);
     border-radius: 3px;
-    
+
     &:hover {
       background: rgba(102, 126, 234, 0.5);
     }

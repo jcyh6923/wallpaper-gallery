@@ -9,7 +9,7 @@ import {
   getOptimisticQueue,
   incrementOptimistic,
   mergeWithOptimistic,
-  setCachedStats
+  setCachedStats,
 } from './localStatsCache'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
@@ -62,22 +62,24 @@ export async function loadStaticStats(series, forceRefresh = false) {
     const statsMap = new Map()
     if (Array.isArray(data)) {
       // 数组格式：[{ image_id, views, downloads }, ...]
-      data.forEach(item => {
+      data.forEach((item) => {
         statsMap.set(item.image_id, {
           views: item.views || item.total_views || 0,
-          downloads: item.downloads || item.total_downloads || 0
+          downloads: item.downloads || item.total_downloads || 0,
         })
       })
-    } else if (typeof data === 'object') {
+    }
+    else if (typeof data === 'object') {
       // 对象格式：{ image_id: { views, downloads }, ... }
       Object.entries(data).forEach(([imageId, stats]) => {
         if (typeof stats === 'number') {
           // 简化格式：{ image_id: views }
           statsMap.set(imageId, { views: stats, downloads: 0 })
-        } else {
+        }
+        else {
           statsMap.set(imageId, {
             views: stats.views || stats.total_views || 0,
-            downloads: stats.downloads || stats.total_downloads || 0
+            downloads: stats.downloads || stats.total_downloads || 0,
           })
         }
       })
@@ -92,7 +94,8 @@ export async function loadStaticStats(series, forceRefresh = false) {
 
     // 合并乐观更新
     return mergeWithOptimistic(statsMap)
-  } catch (error) {
+  }
+  catch (error) {
     console.error(`[StatsService] 加载静态统计失败: ${series}`, error)
     // 返回仅包含乐观更新的数据
     return mergeWithOptimistic(new Map())
@@ -101,7 +104,7 @@ export async function loadStaticStats(series, forceRefresh = false) {
 
 /**
  * 记录预览（乐观更新 + 异步 RPC）
- * @param {Object} wallpaper - 壁纸对象
+ * @param {object} wallpaper - 壁纸对象
  * @param {string} series - 系列名称
  */
 export function recordView(wallpaper, series) {
@@ -115,8 +118,8 @@ export function recordView(wallpaper, series) {
     callRPC('increment_view', {
       img_id: imageId,
       series_name: series,
-      cat: wallpaper.category || null
-    }).catch(err => {
+      cat: wallpaper.category || null,
+    }).catch((err) => {
       if (import.meta.env.DEV) {
         console.warn('[StatsService] 写入预览统计失败:', err)
       }
@@ -126,7 +129,7 @@ export function recordView(wallpaper, series) {
 
 /**
  * 记录下载（乐观更新 + 异步 RPC）
- * @param {Object} wallpaper - 壁纸对象
+ * @param {object} wallpaper - 壁纸对象
  * @param {string} series - 系列名称
  */
 export function recordDownload(wallpaper, series) {
@@ -140,8 +143,8 @@ export function recordDownload(wallpaper, series) {
     callRPC('increment_download', {
       img_id: imageId,
       series_name: series,
-      cat: wallpaper.category || null
-    }).catch(err => {
+      cat: wallpaper.category || null,
+    }).catch((err) => {
       if (import.meta.env.DEV) {
         console.warn('[StatsService] 写入下载统计失败:', err)
       }
@@ -152,7 +155,7 @@ export function recordDownload(wallpaper, series) {
 /**
  * 调用 Supabase RPC 函数
  * @param {string} functionName - 函数名
- * @param {Object} params - 参数
+ * @param {object} params - 参数
  */
 async function callRPC(functionName, params) {
   if (!isSupabaseConfigured()) {
@@ -165,9 +168,9 @@ async function callRPC(functionName, params) {
       'Content-Type': 'application/json',
       'apikey': SUPABASE_ANON_KEY,
       'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      'Prefer': 'return=minimal'
+      'Prefer': 'return=minimal',
     },
-    body: JSON.stringify(params)
+    body: JSON.stringify(params),
   })
 
   if (!response.ok) {
@@ -179,7 +182,7 @@ async function callRPC(functionName, params) {
  * 获取单个壁纸的统计数据
  * @param {string} imageId - 图片 ID
  * @param {Map} statsMap - 已加载的统计数据 Map
- * @returns {Object} - { views, downloads }
+ * @returns {object} - { views, downloads }
  */
 export function getWallpaperStats(imageId, statsMap) {
   if (!statsMap) {
@@ -196,7 +199,7 @@ export function getWallpaperStats(imageId, statsMap) {
 
   return {
     views: staticStats.views + optimisticViews,
-    downloads: staticStats.downloads + optimisticDownloads
+    downloads: staticStats.downloads + optimisticDownloads,
   }
 }
 
@@ -226,13 +229,13 @@ export async function loadStatsFromSupabase(series, limit = 100) {
         headers: {
           'Content-Type': 'application/json',
           'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
           series_filter: series,
-          limit_count: limit
-        })
-      }
+          limit_count: limit,
+        }),
+      },
     )
 
     if (!response.ok) {
@@ -243,10 +246,10 @@ export async function loadStatsFromSupabase(series, limit = 100) {
     const statsMap = new Map()
 
     if (Array.isArray(data)) {
-      data.forEach(item => {
+      data.forEach((item) => {
         statsMap.set(item.image_id, {
           views: item.total_views || 0,
-          downloads: item.total_downloads || 0
+          downloads: item.total_downloads || 0,
         })
       })
     }
@@ -255,7 +258,8 @@ export async function loadStatsFromSupabase(series, limit = 100) {
     setCachedStats(series, statsMap)
 
     return mergeWithOptimistic(statsMap)
-  } catch (error) {
+  }
+  catch (error) {
     console.error('[StatsService] 从 Supabase 加载统计失败:', error)
     return mergeWithOptimistic(new Map())
   }

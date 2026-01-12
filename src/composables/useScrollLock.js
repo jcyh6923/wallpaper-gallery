@@ -1,7 +1,7 @@
 /**
  * 滚动锁定 composable
  * 用于弹窗等场景，锁定背景滚动并在关闭时恢复原位置
- * 
+ *
  * 方案：保存滚动位置 + body.style.top 固定 + modal-open class
  */
 import { onUnmounted, ref } from 'vue'
@@ -11,7 +11,8 @@ export function useScrollLock() {
   const savedScrollY = ref(0)
 
   function lock() {
-    if (isLocked.value) return
+    if (isLocked.value)
+      return
     // 保存当前滚动位置
     savedScrollY.value = window.scrollY || window.pageYOffset
     // 固定 body 位置
@@ -21,7 +22,8 @@ export function useScrollLock() {
   }
 
   function unlock() {
-    if (!isLocked.value) return
+    if (!isLocked.value)
+      return
     document.body.classList.remove('modal-open')
     document.body.style.top = ''
     // 恢复滚动位置
@@ -30,7 +32,8 @@ export function useScrollLock() {
   }
 
   onUnmounted(() => {
-    if (isLocked.value) unlock()
+    if (isLocked.value)
+      unlock()
   })
 
   return { lock, unlock, isLocked }

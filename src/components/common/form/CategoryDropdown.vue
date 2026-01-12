@@ -285,7 +285,7 @@ onUnmounted(() => {
   -webkit-backdrop-filter: blur(30px);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 16px;
-  box-shadow: 
+  box-shadow:
     0 10px 40px rgba(0, 0, 0, 0.12),
     0 0 0 1px rgba(255, 255, 255, 0.1) inset;
   overflow: hidden;
@@ -297,7 +297,7 @@ onUnmounted(() => {
   [data-theme='dark'] & {
     background: rgba(15, 23, 42, 0.95);
     border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 
+    box-shadow:
       0 10px 40px rgba(0, 0, 0, 0.4),
       0 0 0 1px rgba(255, 255, 255, 0.05) inset;
   }
@@ -389,9 +389,10 @@ onUnmounted(() => {
   background: transparent;
   border-radius: 10px;
   cursor: pointer;
-  transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              color 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    background 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
   margin-bottom: 2px;
 
   &:last-child {

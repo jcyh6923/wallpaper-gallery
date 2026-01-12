@@ -7,11 +7,11 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import {
   getOptimisticQueue,
-  incrementOptimistic
+  incrementOptimistic,
 } from '@/services/localStatsCache'
 import {
   loadStaticStats,
-  loadStatsFromSupabase
+  loadStatsFromSupabase,
 } from '@/services/statsService'
 
 export const usePopularityStore = defineStore('popularity', () => {
@@ -44,7 +44,7 @@ export const usePopularityStore = defineStore('popularity', () => {
         image_id: imageId,
         view_count: stats.views || 0,
         download_count: stats.downloads || 0,
-        popularity_score: (stats.views || 0) + (stats.downloads || 0) * 2
+        popularity_score: (stats.views || 0) + (stats.downloads || 0) * 2,
       }))
       .sort((a, b) => b.popularity_score - a.popularity_score)
   })
@@ -57,7 +57,7 @@ export const usePopularityStore = defineStore('popularity', () => {
         rank: index + 1,
         score: item.popularity_score,
         downloads: item.download_count,
-        views: item.view_count
+        views: item.view_count,
       })
     })
     return map
@@ -91,7 +91,8 @@ export const usePopularityStore = defineStore('popularity', () => {
    */
   function getDownloadCount(filename) {
     const stats = statsMap.value.get(filename)
-    if (!stats) return 0
+    if (!stats)
+      return 0
 
     // 合并乐观更新
     const queue = getOptimisticQueue()
@@ -104,7 +105,8 @@ export const usePopularityStore = defineStore('popularity', () => {
    */
   function getViewCount(filename) {
     const stats = statsMap.value.get(filename)
-    if (!stats) return 0
+    if (!stats)
+      return 0
 
     // 合并乐观更新
     const queue = getOptimisticQueue()
@@ -131,7 +133,7 @@ export const usePopularityStore = defineStore('popularity', () => {
     const current = statsMap.value.get(imageId) || { views: 0, downloads: 0 }
     statsMap.value.set(imageId, {
       ...current,
-      views: current.views + 1
+      views: current.views + 1,
     })
   }
 
@@ -146,7 +148,7 @@ export const usePopularityStore = defineStore('popularity', () => {
     const current = statsMap.value.get(imageId) || { views: 0, downloads: 0 }
     statsMap.value.set(imageId, {
       ...current,
-      downloads: current.downloads + 1
+      downloads: current.downloads + 1,
     })
   }
 
@@ -182,10 +184,12 @@ export const usePopularityStore = defineStore('popularity', () => {
       if (import.meta.env.DEV) {
         console.log(`[PopularityStore] 加载完成: ${series}, ${data.size} 条数据`)
       }
-    } catch (err) {
+    }
+    catch (err) {
       console.error('[PopularityStore] 加载热门数据失败:', err)
       statsMap.value = new Map()
-    } finally {
+    }
+    finally {
       loading.value = false
     }
   }
@@ -221,6 +225,6 @@ export const usePopularityStore = defineStore('popularity', () => {
     getPopularityScore,
     incrementLocalView,
     incrementLocalDownload,
-    clearData
+    clearData,
   }
 })

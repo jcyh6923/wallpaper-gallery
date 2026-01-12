@@ -306,7 +306,8 @@ function updateTime() {
 
 // 启动时钟定时器
 function startTimeTimer() {
-  if (timeInterval) return
+  if (timeInterval)
+    return
   updateTime()
   timeInterval = setInterval(updateTime, 1000)
 }
@@ -323,19 +324,21 @@ function stopTimeTimer() {
 let observer = null
 
 function setupVisibilityObserver(el) {
-  if (!el || observer) return
+  if (!el || observer)
+    return
 
   observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           startTimeTimer()
-        } else {
+        }
+        else {
           stopTimeTimer()
         }
       })
     },
-    { threshold: 0.1 }
+    { threshold: 0.1 },
   )
   observer.observe(el)
 }

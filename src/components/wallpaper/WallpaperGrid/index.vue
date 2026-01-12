@@ -474,7 +474,7 @@ onUnmounted(() => {
   // 清除所有未完成的定时器
   timers.forEach(timer => clearTimeout(timer))
   timers.clear()
-  
+
   // 清理所有 GSAP 动画，防止内存泄漏
   gsap.killTweensOf('.wallpaper-card')
   if (gridRef.value) {
