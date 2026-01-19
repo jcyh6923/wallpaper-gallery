@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "sync": "node scripts/sync-data-local.js --force",
+    "sync": "node scripts/sync-data.js --force",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "vitest run",
